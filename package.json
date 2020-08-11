@@ -1,0 +1,24 @@
+{
+  "name": "slim-linq",
+  "version": "0.0.1",
+  "description": "Simple ts linq expression parser",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bugMaker-237/slim-linq.git"
+  },
+  "keywords": [
+    "linq",
+    "expression",
+    "parser"
+  ],
+  "author": "bugmaker-237",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bugMaker-237/slim-linq/issues"
+  },
+  "homepage": "https://github.com/bugMaker-237/slim-linq#readme"
+}

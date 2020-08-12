@@ -1,18 +1,24 @@
 {
-  "name": "slim-linq",
+  "name": "slim-exp",
   "version": "0.0.1",
-  "description": "Simple ts linq expression parser",
-  "main": "index.ts",
+  "description": "Simple ts expression parser",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "start:dev": "nodemon",
-    "build": "rimraf ./build && tsc",
+    "build": "tsc",
     "format": "prettier --write \"src/**/*.(ts|js)\"",
     "lint": "tslint -p tsconfig.json",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags",
     "test": "jest"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bugMaker-237/slim-linq.git"
+    "url": "git+https://github.com/bugMaker-237/slim-exp.git"
   },
   "keywords": [
     "linq",
@@ -20,11 +26,11 @@
     "parser"
   ],
   "author": "bugmaker-237",
-  "license": "MIT",
+  "license": "ISC",
   "bugs": {
-    "url": "https://github.com/bugMaker-237/slim-linq/issues"
+    "url": "https://github.com/bugMaker-237/slim-exp/issues"
   },
-  "homepage": "https://github.com/bugMaker-237/slim-linq#readme",
+  "homepage": "https://github.com/bugMaker-237/slim-exp#readme",
   "devDependencies": {
     "@types/jest": "^26.0.9",
     "@types/node": "^14.0.27",

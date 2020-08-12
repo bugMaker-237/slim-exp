@@ -352,3 +352,4 @@ MigrationBackup/
 build/
 dist/
 out/
+lib/

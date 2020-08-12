@@ -1,2 +1,3 @@
-# slim-linq
-Simple ts linq expression parser
+# slim-exp
+
+Simple ts expression parser

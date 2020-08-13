@@ -2,7 +2,7 @@
 
 ![logo](/slim-logo.png)
 
-Slim-exp is simple typescript expression parser. As a core developer I know the importance of facilitating my teams' work when building softwares. The objectif of of library is not just to write some cool stuff but to build an infrastructure which will ease the developer's life.
+Slim-exp is simple typescript expression parser. As a core developer I know the importance of facilitating my teams' work when building softwares. And expression use the right way at the right time facilitates life. The objectif of this library is not just to write some cool stuff but to help developers build an infrastructure, based on expressions, which will ease life.
 
 ### Works/tested on
 

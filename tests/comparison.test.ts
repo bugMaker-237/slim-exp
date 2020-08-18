@@ -1,4 +1,4 @@
-import { Expression } from '../src/expression';
+import { SlimExpression } from '../src/expression';
 import { ComparisonOperators } from '../src/constants';
 
 interface PseudoModel {
@@ -11,7 +11,7 @@ interface PseudoModel {
 describe('Comparison expression passes', () => {
   it('should have lefthandside, righthandside and operator', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name === $.hello, { hello: 'world' });
@@ -25,7 +25,7 @@ describe('Comparison expression passes', () => {
 
   it('should set rightHandSide string constant', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) => n.name > 'hello');
+    const exp = new SlimExpression<PseudoModel>((n) => n.name > 'hello');
 
     // Act && Assert
     exp.compile();
@@ -39,7 +39,7 @@ describe('Comparison expression passes', () => {
 
   it('should set rightHandSide number constant', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) => n.num > 25);
+    const exp = new SlimExpression<PseudoModel>((n) => n.num > 25);
 
     // Act && Assert
     exp.compile();
@@ -53,7 +53,7 @@ describe('Comparison expression passes', () => {
 
   it('should have righthandside.propertyName equal', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name === $.hello, { hello: 'world' });
@@ -66,7 +66,7 @@ describe('Comparison expression passes', () => {
 
   it('should have operator strictly equal', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name === $.hello, { hello: 'world' });
@@ -78,7 +78,7 @@ describe('Comparison expression passes', () => {
 
   it('should have operator greater than', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name > $.hello, { hello: 'world' });
@@ -86,5 +86,18 @@ describe('Comparison expression passes', () => {
 
     // Assert
     expect(exp.operator).toBe(ComparisonOperators.GREATER_THAN);
+  });
+
+  it('should have propertyvalue with undefined value', () => {
+    // Arrange
+    const exp = new SlimExpression<PseudoModel>();
+    const t = {} as any;
+    // Act
+    exp.fromAction((n) => n.name === t.name, null, false);
+    exp.compile();
+
+    // Assert
+    expect(exp.rightHandSide.propertyName).toBe('name');
+    expect(exp.rightHandSide.propertyValue).toBe(undefined);
   });
 });

@@ -1,4 +1,4 @@
-import { Expression } from '../src/expression';
+import { SlimExpression } from '../src/expression';
 import { ExpressionParserException } from '../src/expression-exception';
 import { ComparisonOperators } from '../src/constants';
 
@@ -11,7 +11,7 @@ interface PseudoModel {
 describe('Comparison & logical expression passes', () => {
   it('should have lefthandside, righthandside, operator and next expression', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name === $.hello && n.matricule > $.code.is, {
@@ -29,7 +29,7 @@ describe('Comparison & logical expression passes', () => {
 
   it('should have righthandside.propertyName of initial expression equal', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name === $.hello && n.matricule > $.code.is, {
@@ -45,7 +45,7 @@ describe('Comparison & logical expression passes', () => {
 
   it('should have righthandside.propertyName of next expression equal', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name === $.hello && n.matricule > $.code.is, {
@@ -61,7 +61,7 @@ describe('Comparison & logical expression passes', () => {
 
   it('should have logical operator binding', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name === $.hello && n.matricule > $.code.is, {

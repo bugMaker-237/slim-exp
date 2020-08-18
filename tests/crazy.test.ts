@@ -1,4 +1,4 @@
-import { Expression } from '../src/expression';
+import { SlimExpression } from '../src/expression';
 
 const RESULT = {
   _expDesc: {
@@ -140,7 +140,7 @@ interface PseudoModel {
 describe('Method expression passes', () => {
   it('should be an amazing description of the expression', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction(

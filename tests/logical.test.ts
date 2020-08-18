@@ -1,4 +1,4 @@
-import { Expression } from '../src/expression';
+import { SlimExpression } from '../src/expression';
 
 interface PseudoModel {
   name: string;
@@ -9,7 +9,7 @@ interface PseudoModel {
 describe('logical expression passes', () => {
   it('should have lefthandside and next', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) => n.name && n.isFool);
+    const exp = new SlimExpression<PseudoModel>((n) => n.name && n.isFool);
 
     // Act
     exp.compile();
@@ -21,7 +21,7 @@ describe('logical expression passes', () => {
 
   it('should be binded by &&', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) => n.name && n.isFool);
+    const exp = new SlimExpression<PseudoModel>((n) => n.name && n.isFool);
 
     // Act
     exp.compile();
@@ -32,7 +32,7 @@ describe('logical expression passes', () => {
 
   it('should be binded by ||', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) => n.name || n.isFool);
+    const exp = new SlimExpression<PseudoModel>((n) => n.name || n.isFool);
 
     // Act
     exp.compile();
@@ -43,7 +43,7 @@ describe('logical expression passes', () => {
 
   it('should be binded by && at first level then by || at next level', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>(
+    const exp = new SlimExpression<PseudoModel>(
       (n) => (n.name && n.matricule) || n.isFool
     );
 

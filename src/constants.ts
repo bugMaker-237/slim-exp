@@ -10,6 +10,19 @@ export const ComparisonOperators = {
   STRICTLY_NOT_EQUAL_TO: '!=='
 };
 
+export const PrimitiveValueTypes = {
+  string: 'string',
+  number: 'number',
+  boolean: 'boolean'
+};
+
+export const ValueTypes = {
+  ...PrimitiveValueTypes,
+  expression: 'expression',
+  object: 'object',
+  function: 'function'
+};
+
 export const LogicalOperators = {
   ALL: ['&&', '||'],
   AND: '&&',

@@ -2,7 +2,7 @@
 
 ![logo](/slim-logo.png)
 
-Slim-exp is simple typescript expression parser. As a core developer I know the importance of facilitating my teams' work when building softwares. And expression use the right way at the right time facilitates life. The objectif of this library is not just to write some cool stuff but to help developers build an infrastructure, based on expressions, which will ease life.
+Slim-exp is simple typescript expression parser. As a core developer I know the importance of facilitating my teams' work when building softwares. Expression use the right way at the right time facilitates life. The objectif of this library is not just to write some cool stuff but to help developers build an infrastructure, based on expressions, which will ease life.
 
 ### Works/tested on
 
@@ -30,7 +30,7 @@ ExpressionDescription {
   next: NextExpression;
 }
 
-ExpressionRightHandSide extends Invokable {
+ExpressionRightHandSide {
   propertyType: string;
   propertyName: string;
   propertyValue: any;
@@ -44,7 +44,7 @@ ExpressionLeftHandSide extends Invokable {
 
 NextExpression {
   bindedBy: string;
-  followedBy: ExpressionDescription;
+  followedBy: ISlimExpression;
 }
 
 Invokable {
@@ -54,7 +54,7 @@ Invokable {
     methodName?: string;
     primitiveValue?: string | number;
     isExpression?: boolean;
-    expression?: IExpression<any>;
+    expression?: ISlimExpression<any>;
   };
 }
 
@@ -118,14 +118,14 @@ Thus we have as resulting expression description, for the above arrow function (
 Other example use cases with implementation are shown below
 
 ```ts
-const exp = new Expression<PseudoModel>((n) => n.name);
+const exp = new SlimExpression<PseudoModel>((n) => n.name);
 exp.compile();
 
 console.log(exp.leftHandSide.propertyName); // 'name'
 ```
 
 ```ts
-const exp = new Expression<PseudoModel>((n) => n.name && n.matricule || n.isFool);
+const exp = new SlimExpression<PseudoModel>((n) => n.name && n.matricule || n.isFool);
 exp.compile();
 
 ...
@@ -173,7 +173,7 @@ exp.compile();
 Example use of context and `fromAction` method
 
 ```ts
-const exp = new Expression<PseudoModel>();
+const exp = new SlimExpression<PseudoModel>();
 
 exp.fromAction(
     (n, $) => n.name === $.hello && n.matricule > $.code.is,
@@ -227,7 +227,7 @@ It is also possible tu use constants as rightHandSide
 ```ts
 
 
-const exp2 = new Expression<PseudoModel>((n) => n.num > 25)
+const exp2 = new SlimExpression<PseudoModel>((n) => n.num > 25)
 exp2.compile();
 
 // Result
@@ -253,7 +253,7 @@ exp2.compile();
 Method calls are also parsed
 
 ```ts
-const exp = new Expression<PseudoModel>((n) => n.name.includes('hello'));
+const exp = new SlimExpression<PseudoModel>((n) => n.name.includes('hello'));
 exp.compile();
 
 // Result
@@ -282,7 +282,7 @@ exp.compile();
 Inner arrow function expression in Method calls are created automatically and parsed to obtain description
 
 ```ts
-const exp = new Expression<PseudoModel>((n) =>
+const exp = new SlimExpression<PseudoModel>((n) =>
     n.complexValues.map((v) => v.complexity.made.simple)
   );
 exp.compile();
@@ -327,7 +327,7 @@ exp.compile();
 You can combine all the different possibilities offered by slim-exp to get more complex arrow function expressions.
 
 ```ts
-const exp = new Expression<PseudoModel>();
+const exp = new SlimExpression<PseudoModel>();
 
 exp.fromAction(
   (n, $) =>

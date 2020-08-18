@@ -162,8 +162,8 @@
         "affectsGlobalScope": false
       },
       "./src/constants.ts": {
-        "version": "98c16d3dfe85851649e2290c5b17425d045c65d0d8c5dc31f0cfa6615b743fcf",
-        "signature": "fb3ac6d6d5c18889791d305d2d2c0008b444e3789fe31ad8821829673f3c8794",
+        "version": "d3d808e6afa0e6e7e76a91d109ce323d5c099598546549941473203d218541b9",
+        "signature": "0a756a97b65a70c7e9aa27b9cb030220359a53650c19dfe66c139237fd25c88b",
         "affectsGlobalScope": false
       },
       "./src/expression-exception.ts": {
@@ -172,18 +172,18 @@
         "affectsGlobalScope": false
       },
       "./src/interfaces.ts": {
-        "version": "7314288182bf473a911a824dfff0647880c826583a3af3785e7de6a12ed62035",
-        "signature": "bad939e5982e21a60f8667aeb3c89936569b4c15c1467e65012ab9b5ad082198",
+        "version": "4b1b06e2ab0b860bedbc322ede8327c96e2b08e4e709531c96158c6c3f2311a9",
+        "signature": "4ee453373a8ee0b222434de5dbdb52c04b37b9b6dda3472cd917dcafa23ea722",
         "affectsGlobalScope": false
       },
       "./src/expression.ts": {
-        "version": "1bde39e16940c11719644f5c3ada4e596ac863dc33e8c3720c991b8c2b54f26f",
-        "signature": "6f1cc3248006a34e45839aa6435308ca3c6a6cf307e78f2665612dc17ee369dd",
+        "version": "4cd7d224fec0960a14be488aaac791cd5ffdf8283fea2b62e51283f796fe9779",
+        "signature": "935aa78a7dd652eb1269558d5378b2358b28a55c7556d3c3d6adbf22c100627e",
         "affectsGlobalScope": false
       },
       "./src/index.ts": {
-        "version": "8c77480f7909082e43e8a4ece299fe2175724b9592eb62c34500ea5bae6736d1",
-        "signature": "8c77480f7909082e43e8a4ece299fe2175724b9592eb62c34500ea5bae6736d1",
+        "version": "d50e9079af251b0dea0f2adddafd1c41313cd069ce1417682b7b8706902485f1",
+        "signature": "d50e9079af251b0dea0f2adddafd1c41313cd069ce1417682b7b8706902485f1",
         "affectsGlobalScope": false
       },
       "./node_modules/@babel/types/lib/index.d.ts": {
@@ -1741,7 +1741,8 @@
         "./node_modules/@types/node/ts3.2/fs.d.ts",
         "./node_modules/@types/node/ts3.2/process.d.ts",
         "./node_modules/@types/node/ts3.2/util.d.ts",
-        "./node_modules/@types/node/util.d.ts"
+        "./node_modules/@types/node/util.d.ts",
+        "./src/constants.ts"
       ]
     },
     "exportedModulesMap": {

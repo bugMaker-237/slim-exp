@@ -1,29 +1,29 @@
+import { ValueTypes } from './constants';
 export type ExpressionResult = object | string | number | boolean;
-export type ExpressionContextFunction = {
-  like(obj: string, expValue: string): void;
-};
-export type ExpressionFunction<
+
+export type SlimExpressionFunction<
   T,
   S extends ExpressionResult = any,
   C extends object = any
 > = (obj: T, $?: C) => S;
 
-export interface IExpression<
+export interface ISlimExpression<
   T,
   S extends ExpressionResult = any,
   C extends object = any
 > {
   compile(): void;
   fromAction<TContext extends C>(
-    fn: ExpressionFunction<T, S, TContext>,
-    context: TContext | null
+    fn: SlimExpressionFunction<T, S, TContext>,
+    context: TContext | null,
+    throwIfContextIsNull: boolean
   ): void;
-  fn: ExpressionFunction<T, S, C>;
+  fn: SlimExpressionFunction<T, S, C>;
   context: C;
   rightHandSide: ExpressionRightHandSide;
   leftHandSide: ExpressionLeftHandSide;
   operator: string;
-  next: NextExpression;
+  next: NextExpression<T, S, C>;
 }
 
 interface Invokable {
@@ -33,10 +33,10 @@ interface Invokable {
     methodName?: string;
     primitiveValue?: string | number;
     isExpression?: boolean;
-    expression?: IExpression<any>;
+    expression?: ISlimExpression<any>;
   };
 }
-export interface ExpressionRightHandSide extends Invokable {
+export interface ExpressionRightHandSide {
   propertyType: string;
   propertyName: string;
   propertyValue: any;
@@ -48,16 +48,24 @@ export interface ExpressionLeftHandSide extends Invokable {
   propertyTree?: string[];
 }
 
-export interface NextExpression {
+export interface NextExpression<
+  TIn,
+  TOut extends ExpressionResult = any,
+  TContext extends object = any
+> {
   bindedBy: string;
-  followedBy: ExpressionDescription;
+  followedBy: ISlimExpression<TIn, TOut, TContext>;
 }
 
-export interface ExpressionDescription {
+export interface ExpressionDescription<
+  TIn,
+  TOut extends ExpressionResult = any,
+  TContext extends object = any
+> {
   operator: string;
   rightHandSide: ExpressionRightHandSide;
   leftHandSide: ExpressionLeftHandSide;
-  next: NextExpression;
+  next: NextExpression<TIn, TOut, TContext>;
 }
 export interface IParsingResult {
   parsed: boolean;

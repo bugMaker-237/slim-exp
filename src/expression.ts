@@ -1,13 +1,12 @@
 import {
-  ExpressionFunction,
+  SlimExpressionFunction,
   ExpressionDescription,
   ExpressionRightHandSide,
   ExpressionLeftHandSide,
   NextExpression,
   ExpressionResult,
-  ExpressionContextFunction,
   IParsingResult,
-  IExpression
+  ISlimExpression
 } from './interfaces';
 import {
   ComparisonOperators,
@@ -17,14 +16,15 @@ import {
 } from './constants';
 import { ExpressionParserException } from './expression-exception';
 
-export class Expression<
+export class SlimExpression<
   TIn,
   TContext extends object = any,
   TOut extends ExpressionResult = any
-> implements IExpression<TIn, TOut, TContext> {
-  private _expDesc: ExpressionDescription;
-  fn: ExpressionFunction<TIn, TOut, any>;
+> implements ISlimExpression<TIn, TOut, TContext> {
+  private _expDesc: ExpressionDescription<TIn, TOut, TContext>;
+  fn: SlimExpressionFunction<TIn, TOut, any>;
   context: TContext | null;
+  private _throwIfContextIsNull: boolean;
 
   public get rightHandSide(): ExpressionRightHandSide {
     return this._expDesc?.rightHandSide;
@@ -38,40 +38,44 @@ export class Expression<
     return this._expDesc?.operator;
   }
 
-  public get next(): NextExpression {
+  public get next(): NextExpression<TIn, TOut, TContext> {
     return this._expDesc?.next;
   }
 
   constructor();
-  constructor(fn: ExpressionFunction<TIn, TOut>);
-  constructor(fn?: ExpressionFunction<TIn, TOut>) {
+  constructor(fn: SlimExpressionFunction<TIn, TOut>);
+  constructor(fn?: SlimExpressionFunction<TIn, TOut>) {
     this.fn = fn;
     this._expDesc = {} as any;
   }
 
   public fromAction<C extends TContext>(
-    fn: ExpressionFunction<TIn, TOut, C>,
-    context: C | null = null
+    fn: SlimExpressionFunction<TIn, TOut, C>,
+    context: C | null = null,
+    throwIfContextIsNull = true
   ) {
     this.fn = fn;
     this.context = context;
+    this._throwIfContextIsNull = throwIfContextIsNull;
   }
 
   public compile() {
     this._compileInner();
   }
 
+  public static nameOf<TIn = any, TOut extends ExpressionResult = any>(
+    fn: SlimExpressionFunction<TIn, TOut>
+  ): string {
+    const elts = SlimExpression._escapeNewLine(fn.toString())
+      .split('=>')[1]
+      .split('.');
+    elts.shift();
+    return elts.join('.');
+  }
+
   private _compileInner(ctxName?: string) {
     // removing all line returns
-    const fnStr = this.fn
-      .toString()
-      .split(/\r\n/)
-      .join('')
-      .split(/\r/)
-      .join('')
-      .split(/\n/)
-      .join('')
-      .trim();
+    const fnStr = SlimExpression._escapeNewLine(this.fn.toString());
 
     if (fnStr.startsWith('function'))
       throw new ExpressionParserException(
@@ -93,13 +97,13 @@ export class Expression<
 
     const expressionContent = fnStr.substring(fnStr.indexOf('>') + 1).trim();
 
-    const expressionParts: ExpressionDescription[] = [];
+    const expressionParts: ExpressionDescription<TIn, TOut, TContext>[] = [];
 
     const expStringParts = expressionContent
       .split(RegExEscapedLogicalOperators)
       .filter((v) => !!v);
     const staticReplacer = '@%#';
-    let expDesc: ExpressionDescription = {} as any;
+    let expDesc: ExpressionDescription<TIn, TOut, TContext> = {} as any;
     let hasRightHandSide = false;
     for (const s of expStringParts) {
       let x = this._cleanString(s);
@@ -108,14 +112,15 @@ export class Expression<
       const innerValue = expressionMatch ? expressionMatch[0] : undefined;
       x = x.replace(RegExInnerFunction, staticReplacer);
       if (this._isLogicalOperator(x)) {
-        const next = {} as any;
+        const next = new SlimExpression<TIn, TContext, TOut>();
         // actually expDesc is the last element of the array
         // it's equivalent to expressionParts[expressionParts.length - 1]
         expDesc.next = {
           bindedBy: x,
           followedBy: next
         };
-        expDesc = next;
+        next._expDesc = {} as any;
+        expDesc = next._expDesc;
       } else {
         const comparisonParts = x
           .split(RegExEscapedComparisonOperators)
@@ -144,6 +149,17 @@ export class Expression<
     }
     this._expDesc = expressionParts[0] || expDesc;
   }
+  private static _escapeNewLine(str: string) {
+    return str
+      .split(/\r\n/)
+      .join('')
+      .split(/\r/)
+      .join('')
+      .split(/\n/)
+      .join('')
+      .trim();
+  }
+
   private _cleanString(s: string) {
     const final = s.trim();
 
@@ -174,7 +190,7 @@ export class Expression<
 
   private _handleLeftHandSide(
     p: string,
-    expDesc: ExpressionDescription,
+    expDesc: ExpressionDescription<TIn, TOut, TContext>,
     expObj: string,
     context: any,
     ctxName: string
@@ -224,7 +240,7 @@ export class Expression<
         };
       } else {
         if (this._isExpression(content)) {
-          const exp = new Expression();
+          const exp = new SlimExpression();
           // tslint:disable-next-line: no-eval
           exp.fromAction(eval(content), context);
           exp._compileInner(ctxName);
@@ -258,7 +274,7 @@ export class Expression<
 
   private _handleRightHandSide(
     p: string,
-    expDesc: ExpressionDescription,
+    expDesc: ExpressionDescription<TIn, TOut, TContext>,
     context: any,
     ctxName?: string
   ) {
@@ -293,7 +309,7 @@ export class Expression<
     ctxName: string
   ): { val: any; finalPropName: any } {
     const deepProps = p.split('.');
-    if (context == null)
+    if (context == null && this._throwIfContextIsNull)
       throw new ExpressionParserException(
         'ContextData must be managed but context is null or undefined'
       );
@@ -305,7 +321,7 @@ export class Expression<
     // removing the context accessor ($) from expression
     const ctx = deepProps.shift();
 
-    if (ctxName !== ctx)
+    if (ctxName !== ctx && this._throwIfContextIsNull)
       throw new ExpressionParserException(
         "Due to javascript limitations, it's not possible to process information out of context, please attach value to context"
       );
@@ -316,7 +332,7 @@ export class Expression<
     if (!propName)
       throw new ExpressionParserException('Internal parsing error');
 
-    let val = context[propName];
+    let val = (context || {})[propName];
 
     for (const prop of deepProps) {
       if (val == null) break;
@@ -324,7 +340,7 @@ export class Expression<
       val = val[prop];
     }
 
-    if (val == null)
+    if (val == null && this._throwIfContextIsNull)
       throw new ExpressionParserException(
         `Could not find property ${p} in provided context`
       );

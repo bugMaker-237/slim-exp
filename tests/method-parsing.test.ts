@@ -1,4 +1,4 @@
-import { Expression } from '../src/expression';
+import { SlimExpression } from '../src/expression';
 import { ExpressionParserException } from '../src/expression-exception';
 import { ComparisonOperators } from '../src/constants';
 
@@ -13,7 +13,9 @@ interface PseudoModel {
 describe('Method expression passes', () => {
   it('should have lefthandside with method content', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) => n.name.includes('hello'));
+    const exp = new SlimExpression<PseudoModel>((n) =>
+      n.name.includes('hello')
+    );
 
     // Act
     exp.compile();
@@ -28,7 +30,7 @@ describe('Method expression passes', () => {
 
   it('should have lefthandside with method content and context value', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction((n, $) => n.name.includes($.hello), { hello: 'mundo' });
@@ -44,7 +46,7 @@ describe('Method expression passes', () => {
 
   it('should have lefthandside with method content and expression value', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) => n.values.map((v) => v));
+    const exp = new SlimExpression<PseudoModel>((n) => n.values.map((v) => v));
 
     // Act
     exp.compile();
@@ -60,7 +62,7 @@ describe('Method expression passes', () => {
 
   it('should have lefthandside with method content and expression value (more complex)', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>((n) =>
+    const exp = new SlimExpression<PseudoModel>((n) =>
       n.complexValues.map((v) => v.complexity.made.simple)
     );
 
@@ -80,7 +82,7 @@ describe('Method expression passes', () => {
 
   it('should have lefthandside with method content, expression value and context value', () => {
     // Arrange
-    const exp = new Expression<PseudoModel>();
+    const exp = new SlimExpression<PseudoModel>();
 
     // Act
     exp.fromAction(

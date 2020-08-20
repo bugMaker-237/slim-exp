@@ -25,9 +25,19 @@ export class SlimExpression<
   fn: SlimExpressionFunction<TIn, TOut, any>;
   context: TContext | null;
   private _throwIfContextIsNull: boolean;
+  private _expObj: string;
+  private _ctxName: string;
 
   public get rightHandSide(): ExpressionRightHandSide {
     return this._expDesc?.rightHandSide;
+  }
+
+  public get expObjectName(): string {
+    return this._expObj;
+  }
+
+  public get contextName(): string {
+    return this._ctxName;
   }
 
   public get leftHandSide(): ExpressionLeftHandSide {
@@ -89,12 +99,13 @@ export class SlimExpression<
       .replace('(', '')
       .replace(')', '')
       .trim();
-
+    this._expObj = expObj;
     if (fnStr.indexOf(',') > -1)
       ctxName =
         ctxName ||
         fnStr.substring(fnStr.indexOf(',') + 1, fnStr.indexOf(')')).trim();
 
+    this._ctxName = ctxName;
     const expressionContent = fnStr.substring(fnStr.indexOf('>') + 1).trim();
 
     const expressionParts: ExpressionDescription<TIn, TOut, TContext>[] = [];
@@ -119,7 +130,13 @@ export class SlimExpression<
           bindedBy: x,
           followedBy: next
         };
+        // next benefits of almost all props of 'this' since
+        // there are parsed in the same section () => <section1> && <section2(next)>
         next._expDesc = {} as any;
+        next._throwIfContextIsNull = this._throwIfContextIsNull;
+        next.context = this.context;
+        next._ctxName = this.contextName;
+        next._expObj = this.expObjectName;
         expDesc = next._expDesc;
       } else {
         const comparisonParts = x
@@ -242,7 +259,7 @@ export class SlimExpression<
         if (this._isExpression(content)) {
           const exp = new SlimExpression();
           // tslint:disable-next-line: no-eval
-          exp.fromAction(eval(content), context);
+          exp.fromAction(eval(content), context, this._throwIfContextIsNull);
           exp._compileInner(ctxName);
           expDesc.leftHandSide.content = {
             type: 'expression',
@@ -281,7 +298,8 @@ export class SlimExpression<
     expDesc.rightHandSide = {
       propertyType: '',
       propertyName: '',
-      propertyValue: null
+      propertyValue: null,
+      implicitContextName: null
     };
 
     const result: IParsingResult = this._tryParse(p);
@@ -302,6 +320,7 @@ export class SlimExpression<
     expDesc.rightHandSide.propertyType = typeof val;
     expDesc.rightHandSide.propertyName = finalPropName;
     expDesc.rightHandSide.propertyValue = val;
+    expDesc.rightHandSide.implicitContextName = p.split('.')[0];
   }
   private _extractPropertyValueFromContext(
     p: string,

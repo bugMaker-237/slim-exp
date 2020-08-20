@@ -13,7 +13,8 @@ export const ComparisonOperators = {
 export const PrimitiveValueTypes = {
   string: 'string',
   number: 'number',
-  boolean: 'boolean'
+  boolean: 'boolean',
+  undefined: 'undefined'
 };
 
 export const ValueTypes = {

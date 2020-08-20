@@ -20,6 +20,8 @@ export interface ISlimExpression<
   ): void;
   fn: SlimExpressionFunction<T, S, C>;
   context: C;
+  expObjectName: string;
+  contextName: string;
   rightHandSide: ExpressionRightHandSide;
   leftHandSide: ExpressionLeftHandSide;
   operator: string;
@@ -37,6 +39,7 @@ interface Invokable {
   };
 }
 export interface ExpressionRightHandSide {
+  implicitContextName: string;
   propertyType: string;
   propertyName: string;
   propertyValue: any;

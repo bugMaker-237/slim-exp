@@ -51,9 +51,17 @@ describe('logical expression passes', () => {
     exp.compile();
 
     // Assert
-    expect(exp.next.bindedBy).toBe('&&');
-    expect(exp.next.followedBy.next).toBeDefined();
-    expect(exp.next.followedBy.next.bindedBy).toBe('||');
-    expect(exp.next.followedBy.next.followedBy).toBeDefined();
+    expect(exp.brackets).toBeDefined();
+    expect(exp.brackets.openingExpDesc.leftHandSide.propertyName).toEqual(
+      'name'
+    );
+    expect(exp.brackets.openingExpDesc.next.bindedBy).toBe('&&');
+    expect(
+      exp.brackets.openingExpDesc.next.followedBy.leftHandSide.propertyName
+    ).toEqual('matricule');
+    expect(exp.brackets.openingExpDesc.next.followedBy.next).toBeUndefined();
+    expect(exp.next.bindedBy).toBe('||');
+    expect(exp.next.followedBy).toBeDefined();
+    expect(exp.next.followedBy.leftHandSide.propertyName).toEqual('isFool');
   });
 });

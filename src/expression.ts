@@ -6,7 +6,8 @@ import {
   NextExpression,
   ExpressionResult,
   IParsingResult,
-  ISlimExpression
+  ISlimExpression,
+  ExpressionBrackets
 } from './interfaces';
 import {
   ComparisonOperators,
@@ -15,6 +16,7 @@ import {
   RegExInnerFunction
 } from './constants';
 import { ExpressionParserException } from './expression-exception';
+import { findSourceMap } from 'module';
 
 export class SlimExpression<
   TIn,
@@ -27,9 +29,14 @@ export class SlimExpression<
   private _throwIfContextIsNull: boolean;
   private _expObj: string;
   private _ctxName: string;
+  private _openedBrakets: ExpressionDescription<any>[] = [];
 
   public get rightHandSide(): ExpressionRightHandSide {
     return this._expDesc?.rightHandSide;
+  }
+
+  public get brackets(): ExpressionBrackets {
+    return this._expDesc?.brackets;
   }
 
   public get expObjectName(): string {
@@ -108,7 +115,7 @@ export class SlimExpression<
     this._ctxName = ctxName;
     const expressionContent = fnStr.substring(fnStr.indexOf('>') + 1).trim();
 
-    const expressionParts: ExpressionDescription<TIn, TOut, TContext>[] = [];
+    let expressionParts: ExpressionDescription<TIn, TOut, TContext>[] = [];
 
     const expStringParts = expressionContent
       .split(RegExEscapedLogicalOperators)
@@ -117,27 +124,13 @@ export class SlimExpression<
     let expDesc: ExpressionDescription<TIn, TOut, TContext> = {} as any;
     let hasRightHandSide = false;
     for (const s of expStringParts) {
-      this._checkExpBrackets(expDesc, s);
-      let x = this._cleanString(s);
+      let x = this._handleBrackets(s, expDesc, expressionParts);
       // checking if expression part contains inner functino call
       const expressionMatch = RegExInnerFunction.exec(x);
       const innerValue = expressionMatch ? expressionMatch[0] : void 0;
       x = x.replace(RegExInnerFunction, staticReplacer);
       if (this._isLogicalOperator(x)) {
-        const next = new SlimExpression<TIn, TContext, TOut>();
-        // actually expDesc is the last element of the array
-        // it's equivalent to expressionParts[expressionParts.length - 1]
-        expDesc.next = {
-          bindedBy: x,
-          followedBy: next
-        };
-        // next benefits of almost all props of 'this' since
-        // there are parsed in the same section () => <section1> && <section2(next)>
-        next._expDesc = {} as any;
-        next._throwIfContextIsNull = this._throwIfContextIsNull;
-        next.context = this.context;
-        next._ctxName = this.contextName;
-        next._expObj = this.expObjectName;
+        const next = this._initialiseNextValueForExpDesc(expDesc, x);
         expDesc = next._expDesc;
       } else {
         const comparisonParts = x
@@ -145,7 +138,7 @@ export class SlimExpression<
           // there are some values that are undefined. Thus filtering is necessary
           .filter((v) => !!v);
         for (const p of comparisonParts) {
-          let c = this._cleanString(p);
+          let c = p.trim();
           if (c.includes(staticReplacer)) {
             c = c.replace(staticReplacer, innerValue);
           }
@@ -166,13 +159,44 @@ export class SlimExpression<
       }
     }
     this._expDesc = expressionParts[0] || expDesc;
+
+    // freeing memory; don't even know why i do this useless thing...
+    this._openedBrakets = [];
+    expressionParts = void 0;
   }
-  private _checkExpBrackets(
+  private _initialiseNextValueForExpDesc(
     expDesc: ExpressionDescription<TIn, TOut, TContext>,
-    s: string
+    bindedBy = ''
   ) {
-    if (this._isLogicalOperator(s)) return;
+    const next = new SlimExpression<TIn, TContext, TOut>();
+
+    // Checking if brackets description are done!
+    // if so then go out to brackets.followedBy and continue expressionTree there
+    const lastOpenedBrackets = this._openedBrakets[
+      this._openedBrakets.length - 1
+    ];
+    const realExpDesc =
+      lastOpenedBrackets?.brackets.closingExpDesc === expDesc
+        ? lastOpenedBrackets
+        : expDesc;
+
+    // actually expDesc is the last element of the array
+    // it's equivalent to expressionParts[expressionParts.length - 1]
+    realExpDesc.next = {
+      bindedBy,
+      followedBy: next as any
+    };
+    // next benefits of almost all props of 'this' since
+    // there are parsed in the same section () => <section1> && <section2(next)>
+    next._expDesc = {} as any;
+    next._throwIfContextIsNull = this._throwIfContextIsNull;
+    next.context = this.context;
+    next._ctxName = this.contextName;
+    next._expObj = this.expObjectName;
+
+    return next;
   }
+
   private static _escapeNewLine(str: string) {
     return str
       .split(/\r\n/)
@@ -184,8 +208,14 @@ export class SlimExpression<
       .trim();
   }
 
-  private _cleanString(s: string) {
+  private _handleBrackets(
+    s: string,
+    expDesc: ExpressionDescription<TIn, TOut, TContext>,
+    expressionParts: ExpressionDescription<TIn, TOut, TContext>[]
+  ) {
     const final = s.trim();
+
+    if (this._isLogicalOperator(final)) return final;
 
     const occurenceCount = (search: RegExp) =>
       (final.match(search) || []).length;
@@ -195,10 +225,20 @@ export class SlimExpression<
     if (oc1 > oc2) {
       const regStr = oc1 - oc2 === 1 ? `^\\(` : `^\\({${oc1 - oc2}}`;
       const rgxStart = new RegExp(regStr);
+      const expBrackets: ExpressionDescription<TIn, TOut, TContext> = {} as any;
+      expBrackets.brackets = {
+        openingExpDesc: expDesc
+      };
+      expressionParts.push(expBrackets);
+      this._openedBrakets.push(expBrackets);
       return final.replace(rgxStart, '');
     } else if (oc1 < oc2) {
       const regStr = oc2 - oc1 === 1 ? `\\)$` : `\\){${oc2 - oc1}$`;
       const rgxEnd = new RegExp(regStr);
+      const lastOpenedBrackets = this._openedBrakets[
+        this._openedBrakets.length - 1
+      ];
+      lastOpenedBrackets.brackets.closingExpDesc = expDesc;
       return final.replace(rgxEnd, '');
     } else {
       if (final.startsWith('(') && final.endsWith(')')) {

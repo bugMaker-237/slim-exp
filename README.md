@@ -24,6 +24,7 @@ The ExpressionDescription looks like this
 ```ts
 
 ExpressionDescription {
+  brackets: ExpressionBrackets;
   operator: string;
   rightHandSide: ExpressionRightHandSide;
   leftHandSide: ExpressionLeftHandSide;

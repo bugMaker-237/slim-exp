@@ -24,6 +24,7 @@ export interface ISlimExpression<
   contextName: string;
   rightHandSide: ExpressionRightHandSide;
   leftHandSide: ExpressionLeftHandSide;
+  brackets: ExpressionBrackets;
   operator: string;
   next: NextExpression<T, S, C>;
 }

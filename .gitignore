@@ -353,3 +353,5 @@ build/
 dist/
 out/
 lib/
+# TypeScript cache
+*.tsbuildinfo

@@ -117,10 +117,11 @@ export class SlimExpression<
     let expDesc: ExpressionDescription<TIn, TOut, TContext> = {} as any;
     let hasRightHandSide = false;
     for (const s of expStringParts) {
+      this._checkExpBrackets(expDesc, s);
       let x = this._cleanString(s);
       // checking if expression part contains inner functino call
       const expressionMatch = RegExInnerFunction.exec(x);
-      const innerValue = expressionMatch ? expressionMatch[0] : undefined;
+      const innerValue = expressionMatch ? expressionMatch[0] : void 0;
       x = x.replace(RegExInnerFunction, staticReplacer);
       if (this._isLogicalOperator(x)) {
         const next = new SlimExpression<TIn, TContext, TOut>();
@@ -166,6 +167,12 @@ export class SlimExpression<
     }
     this._expDesc = expressionParts[0] || expDesc;
   }
+  private _checkExpBrackets(
+    expDesc: ExpressionDescription<TIn, TOut, TContext>,
+    s: string
+  ) {
+    if (this._isLogicalOperator(s)) return;
+  }
   private static _escapeNewLine(str: string) {
     return str
       .split(/\r\n/)
@@ -183,24 +190,23 @@ export class SlimExpression<
     const occurenceCount = (search: RegExp) =>
       (final.match(search) || []).length;
 
-    if (final.startsWith('(') && final.endsWith(')')) {
-      if (occurenceCount(/\(/g) > occurenceCount(/\)/g)) {
-        return final.replace('(', '');
-      } else if (occurenceCount(/\(/g) < occurenceCount(/\)/g)) {
-        return final.substring(0, final.lastIndexOf(')'));
-      } else {
-        return final.substring(1, final.lastIndexOf(')'));
+    const oc1 = occurenceCount(/\(/g);
+    const oc2 = occurenceCount(/\)/g);
+    if (oc1 > oc2) {
+      const regStr = oc1 - oc2 === 1 ? `^\\(` : `^\\({${oc1 - oc2}}`;
+      const rgxStart = new RegExp(regStr);
+      return final.replace(rgxStart, '');
+    } else if (oc1 < oc2) {
+      const regStr = oc2 - oc1 === 1 ? `\\)$` : `\\){${oc2 - oc1}$`;
+      const rgxEnd = new RegExp(regStr);
+      return final.replace(rgxEnd, '');
+    } else {
+      if (final.startsWith('(') && final.endsWith(')')) {
+        const [res] = /^\(+/.exec(final);
+        const rgxFull = new RegExp(`^\\){${res.length}}$`);
+        return final.replace(/^\(+/, '').replace(rgxFull, '');
       }
     }
-
-    if (
-      final.startsWith('(') &&
-      occurenceCount(/\(/g) !== occurenceCount(/\)/g)
-    )
-      return final.replace('(', '').trim();
-
-    if (final.endsWith(')') && occurenceCount(/\(/g) !== occurenceCount(/\)/g))
-      return final.substring(0, final.lastIndexOf(')'));
 
     return final;
   }

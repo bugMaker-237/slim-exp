@@ -162,8 +162,8 @@
         "affectsGlobalScope": false
       },
       "./src/constants.ts": {
-        "version": "d3d808e6afa0e6e7e76a91d109ce323d5c099598546549941473203d218541b9",
-        "signature": "0a756a97b65a70c7e9aa27b9cb030220359a53650c19dfe66c139237fd25c88b",
+        "version": "6d1dee23c71e0f5173a17d5fe50d51c47173bc19abdf6102f015c2f91a0005a0",
+        "signature": "7d7738ad8762b147e95f403aa5e0c50aa52e339829b958f043e254f959bd7abc",
         "affectsGlobalScope": false
       },
       "./src/expression-exception.ts": {
@@ -177,7 +177,7 @@
         "affectsGlobalScope": false
       },
       "./src/expression.ts": {
-        "version": "d982b3cd336d1948db69dff64aa7854cfa14980f33c71ac1b738ba49c66fe9ea",
+        "version": "cd98c63c343692d21568c0b585c7e5171449ca5b41afd9d2f0b75a53c390a4e0",
         "signature": "ac4a1da68418bebb521c726ab5492e0bf0486f25067da9a193fc3ce935f7530a",
         "affectsGlobalScope": false
       },

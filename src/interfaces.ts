@@ -60,11 +60,18 @@ export interface NextExpression<
   followedBy: ISlimExpression<TIn, TOut, TContext>;
 }
 
+interface ExpressionBackets {
+  mode: 'opened' | 'closed';
+  openingExpDesc: ExpressionDescription<any>;
+  closingExpDesc: ExpressionDescription<any>;
+}
+
 export interface ExpressionDescription<
   TIn,
   TOut extends ExpressionResult = any,
   TContext extends object = any
 > {
+  brackets: ExpressionBackets;
   operator: string;
   rightHandSide: ExpressionRightHandSide;
   leftHandSide: ExpressionLeftHandSide;

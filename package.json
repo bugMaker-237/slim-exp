@@ -4,6 +4,9 @@
   "description": "Simple ts expression parser",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "start:dev": "nodemon",
     "build": "tsc",

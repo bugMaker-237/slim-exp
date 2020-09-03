@@ -172,13 +172,13 @@
         "affectsGlobalScope": false
       },
       "./src/interfaces.ts": {
-        "version": "8ea80f19de0193da62a080b1a3dec2277bf11c5b858aea8c64aa3c0b2b575698",
-        "signature": "cb0f5c63608662d5c07de759e6de7bc76914dc11ebecb94dd495e39443e8c21c",
+        "version": "99e9154c69d9914ff0d2e81e2261ce2796ab549882705126dd93eedebd9359c6",
+        "signature": "13a4401021a66a9f9e930fbc753e8cb73e99b4ac7cdb7b58b019b98a69c669af",
         "affectsGlobalScope": false
       },
       "./src/expression.ts": {
-        "version": "cd98c63c343692d21568c0b585c7e5171449ca5b41afd9d2f0b75a53c390a4e0",
-        "signature": "ac4a1da68418bebb521c726ab5492e0bf0486f25067da9a193fc3ce935f7530a",
+        "version": "94b2862a8a4cae8694dfd832fe8e4e897a9aab073d11098faab83f4d2485f8db",
+        "signature": "14139695fa1e97027d9f3195539660483afa5955db9f78cefbbf16738022732f",
         "affectsGlobalScope": false
       },
       "./src/index.ts": {
@@ -1713,6 +1713,7 @@
       "./src/expression.ts": [
         "./node_modules/@types/graceful-fs/index.d.ts",
         "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/module.d.ts",
         "./node_modules/@types/node/process.d.ts",
         "./node_modules/@types/node/ts3.2/fs.d.ts",
         "./node_modules/@types/node/ts3.2/process.d.ts",

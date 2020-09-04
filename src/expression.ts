@@ -15,8 +15,7 @@ import {
   RegExEscapedComparisonOperators,
   RegExInnerFunction
 } from './constants';
-import { ExpressionParserException } from './expression-exception';
-import { findSourceMap } from 'module';
+import { SlimExpressionParserException } from './expression-exception';
 
 export class SlimExpression<
   TIn,
@@ -29,7 +28,9 @@ export class SlimExpression<
   private _throwIfContextIsNull: boolean;
   private _expObj: string;
   private _ctxName: string;
-  private _openedBrakets: ExpressionDescription<any>[] = [];
+  private _lastBracketExp: ExpressionDescription<any>;
+  private _nextRef: NextExpression<any, any, any>;
+  private _openedBrackets: ExpressionDescription<any>[] = [];
 
   public get rightHandSide(): ExpressionRightHandSide {
     return this._expDesc?.rightHandSide;
@@ -92,28 +93,32 @@ export class SlimExpression<
 
   private _compileInner(ctxName?: string) {
     // removing all line returns
-    const fnStr = SlimExpression._escapeNewLine(this.fn.toString());
+    let fnStr = SlimExpression._escapeNewLine(this.fn.toString());
+    let isLegacyFunc = false;
+    if (fnStr.startsWith('function')) {
+      fnStr = fnStr
+        .replace('return', '')
+        // leaving out '{' because i need it as marker to get the content
+        .replace('}', '')
+        .replace(/;.*/, '')
+        .slice(fnStr.indexOf('('));
 
-    if (fnStr.startsWith('function'))
-      throw new ExpressionParserException(
-        'Only arrow functions are allowed. Make sure you have set your minimum target to ES2017 in tsconfig.json'
-      );
+      // this => "function(x){return x.prop}" is a legacy function
+      isLegacyFunc = true;
+    }
 
-    const expObj = (
-      fnStr.substring(0, fnStr.indexOf(',')) ||
-      fnStr.substring(0, fnStr.indexOf('='))
-    )
-      .replace('(', '')
-      .replace(')', '')
-      .trim();
+    const expObj = this._extractExpObj(fnStr, isLegacyFunc);
     this._expObj = expObj;
-    if (fnStr.indexOf(',') > -1)
+
+    if (fnStr.split(')')[0].indexOf(',') > -1)
       ctxName =
         ctxName ||
         fnStr.substring(fnStr.indexOf(',') + 1, fnStr.indexOf(')')).trim();
 
     this._ctxName = ctxName;
-    const expressionContent = fnStr.substring(fnStr.indexOf('>') + 1).trim();
+    const expressionContent = fnStr
+      .substring(fnStr.indexOf(isLegacyFunc ? '{' : '>') + 1)
+      .trim();
 
     let expressionParts: ExpressionDescription<TIn, TOut, TContext>[] = [];
 
@@ -124,15 +129,16 @@ export class SlimExpression<
     let expDesc: ExpressionDescription<TIn, TOut, TContext> = {} as any;
     let hasRightHandSide = false;
     for (const s of expStringParts) {
-      let x = this._handleBrackets(s, expDesc, expressionParts);
-      // checking if expression part contains inner functino call
-      const expressionMatch = RegExInnerFunction.exec(x);
-      const innerValue = expressionMatch ? expressionMatch[0] : void 0;
-      x = x.replace(RegExInnerFunction, staticReplacer);
+      let x = s.trim();
       if (this._isLogicalOperator(x)) {
         const next = this._initialiseNextValueForExpDesc(expDesc, x);
         expDesc = next._expDesc;
       } else {
+        x = this._handleBrackets(s, expDesc);
+        // checking if expression part contains inner functino call
+        const expressionMatch = RegExInnerFunction.exec(x);
+        const innerValue = expressionMatch ? expressionMatch[0] : void 0;
+        x = x.replace(RegExInnerFunction, staticReplacer);
         const comparisonParts = x
           .split(RegExEscapedComparisonOperators)
           // there are some values that are undefined. Thus filtering is necessary
@@ -146,7 +152,7 @@ export class SlimExpression<
             this._handleLeftHandSide(c, expDesc, expObj, this.context, ctxName);
           } else if (!expDesc.operator) {
             if (!this._isComparisonOperator(c))
-              throw new ExpressionParserException(
+              throw new SlimExpressionParserException(
                 'Unsupported comparison operator'
               );
             hasRightHandSide = true;
@@ -158,42 +164,60 @@ export class SlimExpression<
         expressionParts.push(expDesc);
       }
     }
-    this._expDesc = expressionParts[0] || expDesc;
+    // may have been reinitialiased with a bracket Expression so testing
+    // if value already exists
+    this._expDesc = this._expDesc.brackets
+      ? this._expDesc
+      : expressionParts[0] || expDesc;
 
-    // freeing memory; don't even know why i do this useless thing...
-    this._openedBrakets = [];
     expressionParts = void 0;
+    this._openedBrackets = void 0;
   }
+  private _extractExpObj(fnStr: string, isLegacyFunc = false) {
+    return (
+      fnStr.substring(0, fnStr.indexOf(',')) ||
+      fnStr.substring(0, fnStr.indexOf(isLegacyFunc ? '{' : '='))
+    )
+      .replace('(', '')
+      .replace(')', '')
+      .trim();
+  }
+
   private _initialiseNextValueForExpDesc(
     expDesc: ExpressionDescription<TIn, TOut, TContext>,
     bindedBy = ''
   ) {
-    const next = new SlimExpression<TIn, TContext, TOut>();
-
-    // Checking if brackets description are done!
-    // if so then go out to brackets.followedBy and continue expressionTree there
-    const lastOpenedBrackets = this._openedBrakets[
-      this._openedBrakets.length - 1
-    ];
+    // normally if breackets have been open the initial expDesc
+    // of this instance is the expDesc of the opening brackets
     const realExpDesc =
-      lastOpenedBrackets?.brackets.closingExpDesc === expDesc
-        ? lastOpenedBrackets
+      (this._lastBracketExp?.brackets?.closingExp as SlimExpression<any>)
+        ?._expDesc === expDesc
+        ? this._lastBracketExp
         : expDesc;
 
+    const next = this._createChildInstance();
     // actually expDesc is the last element of the array
     // it's equivalent to expressionParts[expressionParts.length - 1]
     realExpDesc.next = {
       bindedBy,
-      followedBy: next as any
+      followedBy: next
     };
+
+    this._nextRef = realExpDesc.next;
+    return next;
+  }
+
+  private _createChildInstance(
+    expDesc?: ExpressionDescription<TIn, TOut, TContext>
+  ): SlimExpression<any> {
+    const next = new SlimExpression<TIn, TContext, TOut>();
     // next benefits of almost all props of 'this' since
     // there are parsed in the same section () => <section1> && <section2(next)>
-    next._expDesc = {} as any;
+    next._expDesc = expDesc || ({} as any);
     next._throwIfContextIsNull = this._throwIfContextIsNull;
     next.context = this.context;
     next._ctxName = this.contextName;
     next._expObj = this.expObjectName;
-
     return next;
   }
 
@@ -210,13 +234,9 @@ export class SlimExpression<
 
   private _handleBrackets(
     s: string,
-    expDesc: ExpressionDescription<TIn, TOut, TContext>,
-    expressionParts: ExpressionDescription<TIn, TOut, TContext>[]
+    expDesc: ExpressionDescription<TIn, TOut, TContext>
   ) {
     const final = s.trim();
-
-    if (this._isLogicalOperator(final)) return final;
-
     const occurenceCount = (search: RegExp) =>
       (final.match(search) || []).length;
 
@@ -227,18 +247,47 @@ export class SlimExpression<
       const rgxStart = new RegExp(regStr);
       const expBrackets: ExpressionDescription<TIn, TOut, TContext> = {} as any;
       expBrackets.brackets = {
-        openingExpDesc: expDesc
+        openingExp: this._createChildInstance(expDesc)
       };
-      expressionParts.push(expBrackets);
-      this._openedBrakets.push(expBrackets);
+
+      if (!this._lastBracketExp) {
+        this._lastBracketExp = this._expDesc = expBrackets;
+      } else {
+        const last = this._createChildInstance(expBrackets);
+
+        // if (!this._lastBracketExp.next) {
+        //   // This implies that new brakets are been opened inside this brackets
+        //   // Need to do some expensive work here.
+        //   // We need to go up the tree to get the last next value.
+        //   let head = this._lastBracketExp.brackets.openingExp;
+        //   let next = head.next;
+        //   do {
+        //     if (next.followedBy.next?.bindedBy) {
+        //       next = next.followedBy.next;
+        //       head = next.followedBy;
+        //     }
+        //   } while (next.followedBy.next?.bindedBy);
+        //   (head as SlimExpression<any>)._expDesc.next = void 0;
+        //   this._lastBracketExp.next = next;
+        // }
+        this._nextRef.followedBy = last;
+        this._lastBracketExp = last._expDesc;
+      }
+      this._openedBrackets.push(this._lastBracketExp);
+
       return final.replace(rgxStart, '');
     } else if (oc1 < oc2) {
-      const regStr = oc2 - oc1 === 1 ? `\\)$` : `\\){${oc2 - oc1}$`;
+      const regStr = oc2 - oc1 === 1 ? `\\)$` : `\\){${oc2 - oc1}}$`;
       const rgxEnd = new RegExp(regStr);
-      const lastOpenedBrackets = this._openedBrakets[
-        this._openedBrakets.length - 1
-      ];
-      lastOpenedBrackets.brackets.closingExpDesc = expDesc;
+      let i = 0;
+      do {
+        const lastOpenedBrackets = this._openedBrackets.pop();
+        lastOpenedBrackets.brackets.closingExp = this._createChildInstance(
+          expDesc
+        );
+        i++;
+      } while (i < oc2 - oc1);
+
       return final.replace(rgxEnd, '');
     } else {
       if (final.startsWith('(') && final.endsWith(')')) {
@@ -266,15 +315,16 @@ export class SlimExpression<
     let pParts = p.split('.');
     const initial = pParts.shift();
 
-    if (!initial) throw new ExpressionParserException('Internal parsing error');
+    if (!initial)
+      throw new SlimExpressionParserException('Internal parsing error');
 
     if (!initial.includes(expObj))
-      throw new ExpressionParserException(
+      throw new SlimExpressionParserException(
         'Expression has to start with type member invocation'
       );
 
     if (initial[0].trim() !== '!' && !expObj.startsWith(initial[0]))
-      throw new ExpressionParserException('Unsupported unary operator');
+      throw new SlimExpressionParserException('Unsupported unary operator');
 
     if (!initial.startsWith(expObj)) {
       const initialUnaryOp = initial[0].trim();
@@ -375,7 +425,7 @@ export class SlimExpression<
   ): { val: any; finalPropName: any } {
     const deepProps = p.split('.');
     if (context == null && this._throwIfContextIsNull)
-      throw new ExpressionParserException(
+      throw new SlimExpressionParserException(
         'ContextData must be managed but context is null or undefined'
       );
     // if (deepProps.length > 2)
@@ -387,7 +437,7 @@ export class SlimExpression<
     const ctx = deepProps.shift();
 
     if (ctxName !== ctx && this._throwIfContextIsNull)
-      throw new ExpressionParserException(
+      throw new SlimExpressionParserException(
         "Due to javascript limitations, it's not possible to process information out of context, please attach value to context"
       );
 
@@ -395,7 +445,7 @@ export class SlimExpression<
     const propName = deepProps.shift();
 
     if (!propName)
-      throw new ExpressionParserException('Internal parsing error');
+      throw new SlimExpressionParserException('Internal parsing error');
 
     let val = (context || {})[propName];
 
@@ -406,7 +456,7 @@ export class SlimExpression<
     }
 
     if (val == null && this._throwIfContextIsNull)
-      throw new ExpressionParserException(
+      throw new SlimExpressionParserException(
         `Could not find property ${p} in provided context`
       );
 

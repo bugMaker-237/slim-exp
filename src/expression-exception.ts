@@ -1,1 +1,1 @@
-export class ExpressionParserException extends Error {}
+export class SlimExpressionParserException extends Error {}

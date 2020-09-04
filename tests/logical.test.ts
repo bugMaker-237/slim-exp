@@ -52,14 +52,14 @@ describe('logical expression passes', () => {
 
     // Assert
     expect(exp.brackets).toBeDefined();
-    expect(exp.brackets.openingExpDesc.leftHandSide.propertyName).toEqual(
+    expect(exp.brackets.openingExp.leftHandSide.propertyName).toEqual(
       'name'
     );
-    expect(exp.brackets.openingExpDesc.next.bindedBy).toBe('&&');
+    expect(exp.brackets.openingExp.next.bindedBy).toBe('&&');
     expect(
-      exp.brackets.openingExpDesc.next.followedBy.leftHandSide.propertyName
+      exp.brackets.openingExp.next.followedBy.leftHandSide.propertyName
     ).toEqual('matricule');
-    expect(exp.brackets.openingExpDesc.next.followedBy.next).toBeUndefined();
+    expect(exp.brackets.openingExp.next.followedBy.next).toBeUndefined();
     expect(exp.next.bindedBy).toBe('||');
     expect(exp.next.followedBy).toBeDefined();
     expect(exp.next.followedBy.leftHandSide.propertyName).toEqual('isFool');

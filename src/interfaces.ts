@@ -62,8 +62,8 @@ export interface NextExpression<
 }
 
 export interface ExpressionBrackets {
-  openingExpDesc?: ExpressionDescription<any>;
-  closingExpDesc?: ExpressionDescription<any>;
+  openingExp?: ISlimExpression<any>;
+  closingExp?: ISlimExpression<any>;
 }
 
 export interface ExpressionDescription<

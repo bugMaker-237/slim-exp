@@ -1,6 +1,4 @@
 import { SlimExpression } from '../src/expression';
-import { ExpressionParserException } from '../src/expression-exception';
-import { ComparisonOperators } from '../src/constants';
 
 interface PseudoModel {
   name: string;

@@ -22,8 +22,12 @@ It is pretty straight forward. You get a description of the arrow function insta
 The ExpressionDescription looks like this
 
 ```ts
+export interface ExpressionBrackets {
+  openingExp?: ISlimExpression<any>;
+  closingExp?: ISlimExpression<any>;
+}
 
-ExpressionDescription {
+export interface ExpressionDescription {
   brackets: ExpressionBrackets;
   operator: string;
   rightHandSide: ExpressionRightHandSide;
@@ -31,24 +35,24 @@ ExpressionDescription {
   next: NextExpression;
 }
 
-ExpressionRightHandSide {
+export interface ExpressionRightHandSide {
   propertyType: string;
   propertyName: string;
   propertyValue: any;
 }
 
-ExpressionLeftHandSide extends Invokable {
+export interface ExpressionLeftHandSide extends Invokable {
   suffixOperator: string;
   propertyName: string;
   propertyTree?: string[];
 }
 
-NextExpression {
+export interface NextExpression {
   bindedBy: string;
   followedBy: ISlimExpression;
 }
 
-Invokable {
+export interface Invokable {
   isMethod?: boolean;
   content?: {
     type: string;
@@ -58,7 +62,6 @@ Invokable {
     expression?: ISlimExpression<any>;
   };
 }
-
 ```
 
 An expression is composed of a leftHandSide, a rightHandSide, an operator and a next Expression. The expression can have at most 2 parameters with the second one, the context (\$) being optional.
@@ -376,6 +379,43 @@ _expDesc: {
 ```
 
 More examples can be found in the tests files.
+
+## Not Supported
+
+- Logical operators in invokable function expressions. i.e
+
+  ```ts
+  const exp = new SlimExpression<PseudoModel>();
+
+  exp.fromAction(
+    (n, $) =>
+      n.complexValues.filter((c) =>
+        c.complexity.made.simple.map(
+          (s) =>
+            s.and.straightTo.the.point !== $.value &&
+            s.and.straightTo.the.point > 50
+        )
+      ),
+    {
+      name: '10x Dev',
+      value: 82
+    }
+  );
+  exp.compile();
+  ```
+
+  The section `&& s.and.straightTo.the.point > 50` cannot yet be handled
+
+- Function reference as expression. The only way slim-exp can work in js (for the moment... Still waiting for a kind of AST which will give us a property value at runtime..) is parsing the function in a raw format (string), thus it does not support function reference.
+
+## TO DO
+
+- Get better regex to browse expression string faster and more efficiently
+
+## Usage Note
+
+- Prefere arrow function to anonymous function during dev.
+- Avoid useless paranthesis.
 
 ## Authors
 

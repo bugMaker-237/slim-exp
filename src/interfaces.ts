@@ -18,7 +18,7 @@ export interface ISlimExpression<
     context: TContext | null,
     throwIfContextIsNull: boolean
   ): void;
-  fn: SlimExpressionFunction<T, S, C>;
+  // fn: SlimExpressionFunction<T, S, C>;
   context: C;
   expObjectName: string;
   contextName: string;

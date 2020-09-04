@@ -24,7 +24,7 @@ export class SlimExpression<
   TOut extends ExpressionResult = any
 > implements ISlimExpression<TIn, TOut, TContext> {
   private _expDesc: ExpressionDescription<TIn, TOut, TContext>;
-  fn: SlimExpressionFunction<TIn, TOut, any>;
+  private _fn: SlimExpressionFunction<TIn, TOut, any>;
   context: TContext | null;
   private _throwIfContextIsNull: boolean;
   private _expObj: string;
@@ -64,7 +64,7 @@ export class SlimExpression<
   constructor();
   constructor(fn: SlimExpressionFunction<TIn, TOut>);
   constructor(fn?: SlimExpressionFunction<TIn, TOut>) {
-    this.fn = fn;
+    this._fn = fn;
     this._expDesc = {} as any;
   }
 
@@ -73,7 +73,7 @@ export class SlimExpression<
     context: C | null = null,
     throwIfContextIsNull = true
   ) {
-    this.fn = fn;
+    this._fn = fn;
     this.context = context;
     this._throwIfContextIsNull = throwIfContextIsNull;
   }
@@ -95,7 +95,7 @@ export class SlimExpression<
   private _compileInner(ctxName?: string, fnAsString?: string) {
     // removing all line returns
     let fnStr =
-      fnAsString?.trim() || SlimExpression._escapeNewLine(this.fn.toString());
+      fnAsString?.trim() || SlimExpression._escapeNewLine(this._fn.toString());
     let isLegacyFunc = false;
     if (fnStr.startsWith('function')) {
       fnStr = fnStr

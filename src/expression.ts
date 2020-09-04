@@ -13,7 +13,8 @@ import {
   ComparisonOperators,
   RegExEscapedLogicalOperators,
   RegExEscapedComparisonOperators,
-  RegExInnerFunction
+  RegExInnerFunction,
+  RegExLegacyInnerFunction
 } from './constants';
 import { SlimExpressionParserException } from './expression-exception';
 
@@ -91,17 +92,21 @@ export class SlimExpression<
     return elts.join('.');
   }
 
-  private _compileInner(ctxName?: string) {
+  private _compileInner(ctxName?: string, fnAsString?: string) {
     // removing all line returns
-    let fnStr = SlimExpression._escapeNewLine(this.fn.toString());
+    let fnStr =
+      fnAsString?.trim() || SlimExpression._escapeNewLine(this.fn.toString());
     let isLegacyFunc = false;
     if (fnStr.startsWith('function')) {
       fnStr = fnStr
         .replace('return', '')
-        // leaving out '{' because i need it as marker to get the content
-        .replace('}', '')
-        .replace(/;.*/, '')
+        // removes the beginig 'function' keyword
         .slice(fnStr.indexOf('('));
+
+      // leaving out '{' because i need it as marker to get the content
+      fnStr = fnStr
+        .slice(0, fnStr.lastIndexOf('}'))
+        .slice(0, fnStr.lastIndexOf(';'));
 
       // this => "function(x){return x.prop}" is a legacy function
       isLegacyFunc = true;
@@ -136,9 +141,12 @@ export class SlimExpression<
       } else {
         x = this._handleBrackets(s, expDesc);
         // checking if expression part contains inner functino call
-        const expressionMatch = RegExInnerFunction.exec(x);
+        const funcRegex = isLegacyFunc
+          ? RegExLegacyInnerFunction
+          : RegExInnerFunction;
+        const expressionMatch = funcRegex.exec(x);
         const innerValue = expressionMatch ? expressionMatch[0] : void 0;
-        x = x.replace(RegExInnerFunction, staticReplacer);
+        x = x.replace(funcRegex, staticReplacer);
         const comparisonParts = x
           .split(RegExEscapedComparisonOperators)
           // there are some values that are undefined. Thus filtering is necessary
@@ -229,6 +237,7 @@ export class SlimExpression<
       .join('')
       .split(/\n/)
       .join('')
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
@@ -255,21 +264,6 @@ export class SlimExpression<
       } else {
         const last = this._createChildInstance(expBrackets);
 
-        // if (!this._lastBracketExp.next) {
-        //   // This implies that new brakets are been opened inside this brackets
-        //   // Need to do some expensive work here.
-        //   // We need to go up the tree to get the last next value.
-        //   let head = this._lastBracketExp.brackets.openingExp;
-        //   let next = head.next;
-        //   do {
-        //     if (next.followedBy.next?.bindedBy) {
-        //       next = next.followedBy.next;
-        //       head = next.followedBy;
-        //     }
-        //   } while (next.followedBy.next?.bindedBy);
-        //   (head as SlimExpression<any>)._expDesc.next = void 0;
-        //   this._lastBracketExp.next = next;
-        // }
         this._nextRef.followedBy = last;
         this._lastBracketExp = last._expDesc;
       }
@@ -354,9 +348,9 @@ export class SlimExpression<
       } else {
         if (this._isExpression(content)) {
           const exp = new SlimExpression();
-          // tslint:disable-next-line: no-eval
-          exp.fromAction(eval(content), context, this._throwIfContextIsNull);
-          exp._compileInner(ctxName);
+          exp.context = context;
+          exp._throwIfContextIsNull = this._throwIfContextIsNull;
+          exp._compileInner(ctxName, content);
           expDesc.leftHandSide.content = {
             type: 'expression',
             isExpression: true,
@@ -382,7 +376,7 @@ export class SlimExpression<
     expDesc.leftHandSide.propertyName = pParts.join('.') || initial;
   }
   private _isExpression(res: string) {
-    return res.indexOf('=>') > -1;
+    return res.indexOf('=>') > -1 || res.startsWith('function');
   }
 
   private _handleRightHandSide(

@@ -32,3 +32,4 @@ export const LogicalOperators = {
 export const RegExEscapedComparisonOperators = /(\=\=\=?|\>\=?|\<\=?|\!\=\=?)(?<!(\=\>))(?<!(\=\<))/;
 export const RegExEscapedLogicalOperators = /(\&\&|\|\|)/;
 export const RegExInnerFunction = /((?<=\().*(?=\)))+/g;
+export const RegExLegacyInnerFunction = /(function\s+\((.*)\)\s+\{\s+return\s(.*))(?=\))/g;

@@ -1,3 +1,3 @@
 export { SlimExpression } from './expression';
-export * from './constants';
-export * from './interfaces';
+export {ComparisonOperators, LogicalOperators, PrimitiveValueTypes, ValueTypes} from './constants';
+export {ISlimExpression, SlimExpressionFunction} from './interfaces';

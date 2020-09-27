@@ -162,27 +162,27 @@
         "affectsGlobalScope": false
       },
       "./src/constants.ts": {
-        "version": "6d1dee23c71e0f5173a17d5fe50d51c47173bc19abdf6102f015c2f91a0005a0",
-        "signature": "7d7738ad8762b147e95f403aa5e0c50aa52e339829b958f043e254f959bd7abc",
+        "version": "a069eafa00c1813ea3d260d8573b948a9ab4ebb36f6f273e328dc37f374d0ee1",
+        "signature": "81bb554c0f5770e90cee556cf37f007d9da31b65e8a27bf43845de8f4d14baa9",
         "affectsGlobalScope": false
       },
       "./src/expression-exception.ts": {
-        "version": "18aa2e7c18f5a2a153cbe3bd7f04420dedc77d1483f65d72e50c656a7bc6218e",
-        "signature": "26eabc565eb262cd85d59a85ca4e452fe8637fbc33e4b8e08bc4c0fbc5d24279",
+        "version": "e7d0449819d458b5d286faa28d3e96858a6e1e1fddb0c52f792546795955a2a1",
+        "signature": "046e72e84693bf709731c07c3ed2c3e483385b41a97aa58eadcff15e2e323530",
         "affectsGlobalScope": false
       },
       "./src/interfaces.ts": {
-        "version": "99e9154c69d9914ff0d2e81e2261ce2796ab549882705126dd93eedebd9359c6",
-        "signature": "13a4401021a66a9f9e930fbc753e8cb73e99b4ac7cdb7b58b019b98a69c669af",
+        "version": "5e2fa06ab79658369b5af4a77baab24392c7ff5fd181feca757b3689df1238f6",
+        "signature": "bfa6e692d18dbf3cc32415de79d1b29d57ba10e44b6463f45fae9d4f8553c296",
         "affectsGlobalScope": false
       },
       "./src/expression.ts": {
-        "version": "94b2862a8a4cae8694dfd832fe8e4e897a9aab073d11098faab83f4d2485f8db",
-        "signature": "14139695fa1e97027d9f3195539660483afa5955db9f78cefbbf16738022732f",
+        "version": "6ea3077d31348a2a706fd89fca62cb2ab7d9de3b603862b2ad1a4577691cb0b9",
+        "signature": "4ca2295d94c3405de87754b782282a3b84c335e481f7d36b767010cae6980f98",
         "affectsGlobalScope": false
       },
       "./src/index.ts": {
-        "version": "d50e9079af251b0dea0f2adddafd1c41313cd069ce1417682b7b8706902485f1",
+        "version": "9d270273e1549bfa5c43e4e59975169062bfea1f4cb17b04e57dc64c04ab479e",
         "signature": "d50e9079af251b0dea0f2adddafd1c41313cd069ce1417682b7b8706902485f1",
         "affectsGlobalScope": false
       },
@@ -1713,7 +1713,6 @@
       "./src/expression.ts": [
         "./node_modules/@types/graceful-fs/index.d.ts",
         "./node_modules/@types/node/fs.d.ts",
-        "./node_modules/@types/node/module.d.ts",
         "./node_modules/@types/node/process.d.ts",
         "./node_modules/@types/node/ts3.2/fs.d.ts",
         "./node_modules/@types/node/ts3.2/process.d.ts",

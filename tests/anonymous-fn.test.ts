@@ -1,212 +1,12 @@
 import { ComparisonOperators } from '../src/constants';
 import { SlimExpression } from '../src/expression';
+import { RESULT3, RESULT0 } from './RESULT';
 
 interface PseudoModel {
   name: string;
   matricule: string;
   isFool: boolean;
 }
-const RESULT4 = {
-  _expDesc: {
-    brackets: {
-      openingExp: {
-        _openedBrackets: [],
-        _expDesc: {
-          leftHandSide: {
-            propertyName: 'firstname.startsWith',
-            suffixOperator: '',
-            isMethod: true,
-            content: {
-              type: 'string',
-              primitiveValue: 'Bugg',
-              methodName: 'startsWith'
-            },
-            propertyTree: ['firstname', 'startsWith']
-          },
-          next: {
-            bindedBy: '&&'
-          }
-        },
-        _throwIfContextIsNull: true,
-        context: null,
-        _expObj: 'p'
-      },
-      closingExp: {
-        _openedBrackets: [],
-        _expDesc: {
-          leftHandSide: {
-            propertyName: 'lastname.includes',
-            suffixOperator: '',
-            isMethod: true,
-            content: {
-              type: 'string',
-              primitiveValue: 'aker',
-              methodName: 'includes'
-            },
-            propertyTree: ['lastname', 'includes']
-          }
-        },
-        _throwIfContextIsNull: true,
-        context: null,
-        _expObj: 'p'
-      }
-    },
-    next: {
-      bindedBy: '||',
-      followedBy: {
-        _openedBrackets: [],
-        _expDesc: {
-          brackets: {
-            openingExp: {
-              _openedBrackets: [],
-              _expDesc: {
-                leftHandSide: {
-                  propertyName: 'IDNumber',
-                  suffixOperator: '',
-                  propertyTree: ['IDNumber']
-                },
-                operator: '>',
-                rightHandSide: {
-                  propertyType: 'number',
-                  propertyName: '[CONSTANT]',
-                  propertyValue: 850000,
-                  implicitContextName: null
-                },
-                next: {
-                  bindedBy: '&&',
-                  followedBy: {
-                    _openedBrackets: [],
-                    _expDesc: {
-                      brackets: {
-                        openingExp: {
-                          _openedBrackets: [],
-                          _expDesc: {
-                            leftHandSide: {
-                              propertyName: 'whatIf',
-                              suffixOperator: '',
-                              propertyTree: ['whatIf']
-                            },
-                            operator: '===',
-                            rightHandSide: {
-                              propertyType: 'boolean',
-                              propertyName: '[CONSTANT]',
-                              propertyValue: true,
-                              implicitContextName: null
-                            },
-                            next: {
-                              bindedBy: '||'
-                            }
-                          },
-                          _throwIfContextIsNull: true,
-                          context: null,
-                          _expObj: 'p'
-                        },
-                        closingExp: {
-                          _openedBrackets: [],
-                          _expDesc: {
-                            leftHandSide: {
-                              propertyName: 'whatYouthink',
-                              suffixOperator: '!',
-                              propertyTree: ['whatYouthink']
-                            }
-                          },
-                          _throwIfContextIsNull: true,
-                          context: null,
-                          _expObj: 'p'
-                        }
-                      },
-                      next: {
-                        bindedBy: '&&'
-                      }
-                    },
-                    _throwIfContextIsNull: true,
-                    context: null,
-                    _expObj: 'p'
-                  }
-                }
-              },
-              _throwIfContextIsNull: true,
-              context: null,
-              _expObj: 'p'
-            },
-            closingExp: {
-              _openedBrackets: [],
-              _expDesc: {
-                leftHandSide: {
-                  propertyName: 'helloMundo',
-                  suffixOperator: '',
-                  propertyTree: ['helloMundo']
-                },
-                operator: '<',
-                rightHandSide: {
-                  propertyType: 'string',
-                  propertyName: '[CONSTANT]',
-                  propertyValue: 'thisOne',
-                  implicitContextName: null
-                }
-              },
-              _throwIfContextIsNull: true,
-              context: null,
-              _expObj: 'p'
-            }
-          }
-        },
-        _throwIfContextIsNull: true,
-        context: null,
-        _expObj: 'p'
-      }
-    }
-  },
-  context: null,
-  _throwIfContextIsNull: true,
-  _expObj: 'p',
-  _lastBracketExp: {
-    brackets: {
-      openingExp: {
-        _openedBrackets: [],
-        _expDesc: {
-          leftHandSide: {
-            propertyName: 'whatIf',
-            suffixOperator: '',
-            propertyTree: ['whatIf']
-          },
-          operator: '===',
-          rightHandSide: {
-            propertyType: 'boolean',
-            propertyName: '[CONSTANT]',
-            propertyValue: true,
-            implicitContextName: null
-          },
-          next: {
-            bindedBy: '||'
-          }
-        },
-        _throwIfContextIsNull: true,
-        context: null,
-        _expObj: 'p'
-      },
-      closingExp: {
-        _openedBrackets: [],
-        _expDesc: {
-          leftHandSide: {
-            propertyName: 'whatYouthink',
-            suffixOperator: '!',
-            propertyTree: ['whatYouthink']
-          }
-        },
-        _throwIfContextIsNull: true,
-        context: null,
-        _expObj: 'p'
-      }
-    },
-    next: {
-      bindedBy: '&&'
-    }
-  },
-  _nextRef: {
-    bindedBy: '&&'
-  }
-};
 describe('Anonymous function expression passes', () => {
   it('should have propertyName', () => {
     // Arrange
@@ -292,11 +92,40 @@ describe('Anonymous function expression passes', () => {
       return (p.firstname.startsWith('Bugg') && p.lastname.includes('aker')) ||
         (p.IDNumber > 850000 &&
           (p.whatIf === true || !p.whatYouthink) &&
-          p.helloMundo < 'thisOne');
+          p.helloMundo < 'thisOne')
+        ;
     });
     exp.compile();
 
     // Assert
-    expect(exp).toMatchObject(RESULT4);
+    expect(exp.toString()).toEqual(JSON.stringify(RESULT3, null, 2));
+  });
+  it('should be an amazing description of the expression', () => {
+    // Arrange
+    const exp = new SlimExpression<PseudoModel>();
+
+    // Act
+    exp.fromAction(
+      function (n, $) {
+        return (n.name.includes('hello') && n.isFool) ||
+          (n.matricule !== 'mat22' &&
+            n.name.startsWith($.name) &&
+            n.complexValues.filter(function (c) {
+              return c.complexity.made.simple.map(function (s) {
+                return s.and.straightTo.the.point !== $.value;
+              });
+            }))
+          ;
+      },
+      {
+        name: '10x Dev',
+        value: 82,
+        obj: { the: {} }
+      }
+    );
+    exp.compile();
+
+    // Assert
+    expect(exp.toString()).toEqual(JSON.stringify(RESULT0, null, 2));
   });
 });

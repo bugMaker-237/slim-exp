@@ -5,6 +5,12 @@ import { RESULT3, RESULT0 } from './RESULT';
 interface PseudoModel {
   name: string;
   matricule: string;
+  values: string[];
+  complexValues: {
+    complexity: {
+      made: { simple: { and: { straightTo: { the: { point } } } }[] };
+    };
+  }[];
   isFool: boolean;
 }
 describe('Anonymous function expression passes', () => {
@@ -86,7 +92,7 @@ describe('Anonymous function expression passes', () => {
 
     // Act
     // This will fail if your IDE wrap this return into (...) paranthesis.
-    // Mine does.  In production using tools like webpack this es5 syntax 
+    // Mine does.  In production using tools like webpack this es5 syntax
     // will be fine... I think...
     exp.fromAction(function (p) {
       return (p.firstname.startsWith('Bugg') && p.lastname.includes('aker')) ||

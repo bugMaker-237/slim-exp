@@ -1,7 +1,4 @@
 import { SlimExpression } from '../src/expression';
-import { ExpressionParserException } from '../src/expression-exception';
-import { ComparisonOperators } from '../src/constants';
-
 interface PseudoModel {
   name: string;
   matricule: string;
@@ -57,7 +54,6 @@ describe('Method expression passes', () => {
     expect(exp.leftHandSide.isMethod).toBeTruthy();
     expect(exp.leftHandSide.content.methodName).toBe('map');
     expect(exp.leftHandSide.content.isExpression).toBeTruthy();
-    expect(exp.leftHandSide.content.expression.fn.toString()).toBe('(v) => v');
   });
 
   it('should have lefthandside with method content and expression value (more complex)', () => {
@@ -75,9 +71,6 @@ describe('Method expression passes', () => {
     expect(exp.leftHandSide.isMethod).toBeTruthy();
     expect(exp.leftHandSide.content.methodName).toBe('map');
     expect(exp.leftHandSide.content.isExpression).toBeTruthy();
-    expect(exp.leftHandSide.content.expression.fn.toString()).toBe(
-      '(v) => v.complexity.made.simple'
-    );
   });
 
   it('should have lefthandside with method content, expression value and context value', () => {

@@ -13,7 +13,8 @@ import {
   ComparisonOperators,
   RegExEscapedLogicalOperators,
   RegExEscapedComparisonOperators,
-  RegExInnerFunction
+  RegExInnerFunction,
+  RegExLegacyInnerFunction
 } from './constants';
 import { SlimExpressionParserException } from './expression-exception';
 
@@ -23,7 +24,7 @@ export class SlimExpression<
   TOut extends ExpressionResult = any
   > implements ISlimExpression<TIn, TOut, TContext> {
   private _expDesc: ExpressionDescription<TIn, TOut, TContext>;
-  fn: SlimExpressionFunction<TIn, TOut, any>;
+  private _fn: SlimExpressionFunction<TIn, TOut, any>;
   context: TContext | null;
   private _throwIfContextIsNull: boolean;
   private _expObj: string;
@@ -72,7 +73,7 @@ export class SlimExpression<
     context: C | null = null,
     throwIfContextIsNull = true
   ) {
-    this.fn = fn;
+    this._fn = fn;
     this.context = context;
     this._throwIfContextIsNull = throwIfContextIsNull;
   }
@@ -281,9 +282,9 @@ export class SlimExpression<
       } else {
         if (this._isExpression(content)) {
           const exp = new SlimExpression();
-          // tslint:disable-next-line: no-eval
-          exp.fromAction(eval(content), context, this._throwIfContextIsNull);
-          exp._compileInner(ctxName);
+          exp.context = context;
+          exp._throwIfContextIsNull = this._throwIfContextIsNull;
+          exp._compileInner(ctxName, content);
           expDesc.leftHandSide.content = {
             type: 'expression',
             isExpression: true,
@@ -309,7 +310,7 @@ export class SlimExpression<
     expDesc.leftHandSide.propertyName = pParts.join('.') || initial;
   }
   private _isExpression(res: string) {
-    return res.indexOf('=>') > -1;
+    return res.indexOf('=>') > -1 || res.startsWith('function');
   }
 
   private _handleRightHandSide(
@@ -355,10 +356,10 @@ export class SlimExpression<
       throw new SlimExpressionParserException(
         'ContextData must be managed but context is null or undefined'
       );
-    // if (deepProps.length > 2)
-    // console.warn(
-    //   'It is more expensive to use complex object for context due to deep search of property value in object tree. Consider using simple objects. e.g: {id: myId}'
-    // );
+    if (deepProps.length > 2)
+      console.warn(
+        'It is more expensive to use complex object for context due to deep search of property value in object tree. Consider using simple objects. e.g: {id: myId}'
+      );
 
     // removing the context accessor ($) from expression
     const ctx = deepProps.shift();

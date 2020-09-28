@@ -32,7 +32,7 @@ export class SlimExpression<
   private _lastBracketExp: ExpressionDescription<any>;
   private _nextRef: NextExpression<any, any, any>;
   private _openedBrackets: ExpressionDescription<any>[] = [];
-
+  private _hash: string;
   public get rightHandSide(): ExpressionRightHandSide {
     return this._expDesc?.rightHandSide;
   }
@@ -61,11 +61,16 @@ export class SlimExpression<
     return this._expDesc?.next;
   }
 
+  public get hash(): string {
+    return this._hash;
+  }
+
   constructor();
   constructor(fn: SlimExpressionFunction<TIn, TOut>);
   constructor(fn?: SlimExpressionFunction<TIn, TOut, TContext>) {
     this._fn = fn;
     this._expDesc = {} as any;
+    this._hash = (Math.random() * 10000000000).toString().split('.')[0].padEnd(10, '0');
   }
 
   public fromAction<C extends TContext>(

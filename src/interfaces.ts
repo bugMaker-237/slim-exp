@@ -70,6 +70,11 @@ export interface ISlimExpression<
   next: NextExpression<T, S, C>;
 
   /**
+   * A hash string identifying this expression uniquely
+   */
+  hash: string;
+
+  /**
    * A stringified version of the object
    */
   toString(): string;

@@ -45,3 +45,19 @@ describe('Simple expression passes', () => {
     expect(expName).toBe('name.second');
   });
 });
+
+describe('testing utils', () => {
+
+  it('should have same hash', () => {
+    // Arrange
+    const exp = new SlimExpression<PseudoModel>((n) => !!n.name);
+    const exp2 = new SlimExpression<PseudoModel>((n) => !!n.name);
+
+    // Act
+    exp.compile();
+    exp2.compile();
+
+    // Assert
+    expect(exp.computeHash()).toEqual(exp2.computeHash());
+  });
+});

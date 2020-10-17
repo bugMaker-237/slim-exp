@@ -70,10 +70,14 @@ export interface ISlimExpression<
   next: NextExpression<T, S, C>;
 
   /**
-   * A hash string identifying this expression uniquely
+   * Computes a hash string identifying this expression
    */
-  hash: string;
+  computeHash(): string
 
+  /**
+   * The last saved hash after calling compute hash
+   */
+  lastComputedHash: string
   /**
    * A stringified version of the object
    */

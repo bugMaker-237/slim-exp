@@ -12,6 +12,7 @@ export const ComparisonOperators = {
 
 export const PrimitiveValueTypes = {
   string: 'string',
+  date: 'date',
   number: 'number',
   boolean: 'boolean',
   undefined: 'undefined'

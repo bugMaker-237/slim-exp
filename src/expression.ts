@@ -22,7 +22,7 @@ export class SlimExpression<
   TIn,
   TContext extends object = any,
   TOut extends ExpressionResult = any
-  > implements ISlimExpression<TIn, TOut, TContext> {
+> implements ISlimExpression<TIn, TOut, TContext> {
   private _expDesc: ExpressionDescription<TIn, TOut, TContext>;
   private _fn: SlimExpressionFunction<TIn, TOut, any>;
   context: TContext | null;
@@ -57,12 +57,12 @@ export class SlimExpression<
     return this._expDesc?.operator;
   }
 
-  public get next(): NextExpression<TIn, TOut, TContext> {
-    return this._expDesc?.next;
+  public get lastComputedHash(): string {
+    return this._hash;
   }
 
-  public get hash(): string {
-    return this._hash;
+  public get next(): NextExpression<TIn, TOut, TContext> {
+    return this._expDesc?.next;
   }
 
   constructor();
@@ -70,7 +70,6 @@ export class SlimExpression<
   constructor(fn?: SlimExpressionFunction<TIn, TOut, TContext>) {
     this._fn = fn;
     this._expDesc = {} as any;
-    this._hash = (Math.random() * 10000000000).toString().split('.')[0].padEnd(10, '0');
   }
 
   public fromAction<C extends TContext>(
@@ -87,11 +86,23 @@ export class SlimExpression<
     this._compileInner();
   }
 
+  public computeHash(): string {
+    if (!this._expDesc) this.compile();
+
+    const obj = JSON.stringify(_getExpressionDefinition(this));
+    let h = 0;
+    for (let i = 0; i < obj.length; i++) {
+      h += obj.charCodeAt(i);
+    }
+    return (this._hash = h.toString());
+  }
+
   public static nameOf<TIn = any, TOut extends ExpressionResult = any>(
     fn: SlimExpressionFunction<TIn, TOut>
   ): string {
-
-    const res = SlimExpression._extractFnContent(fn.toString()).expressionContent.split('.');
+    const res = SlimExpression._extractFnContent(
+      fn.toString()
+    ).expressionContent.split('.');
     res.shift();
     return res.join('.');
   }
@@ -99,13 +110,22 @@ export class SlimExpression<
   public static extractContent<TIn = any, TOut extends ExpressionResult = any>(
     fn: SlimExpressionFunction<TIn, TOut>,
     ctxName?: string
-  ): { expressionContent: string, isLegacyFunc: boolean, expObj: string, ctxName: string } {
+  ): {
+    expressionContent: string;
+    isLegacyFunc: boolean;
+    expObj: string;
+    ctxName: string;
+  } {
     return SlimExpression._extractFnContent(fn.toString(), ctxName);
   }
 
   private _compileInner(contextName?: string, fnAsString?: string) {
-    fnAsString = fnAsString?.trim() || SlimExpression._escapeNewLine(this._fn.toString());
-    const { expStringParts, isLegacyFunc, expObj, ctxName } = this._parseFn(fnAsString, contextName);
+    fnAsString =
+      fnAsString?.trim() || SlimExpression._escapeNewLine(this._fn?.toString());
+    const { expStringParts, isLegacyFunc, expObj, ctxName } = this._parseFn(
+      fnAsString,
+      contextName
+    );
     this._expObj = expObj;
     this._ctxName = ctxName;
     const context = this.context;
@@ -119,9 +139,17 @@ export class SlimExpression<
       if (this._isLogicalOperator(x)) {
         expDesc = this._compileLogicalOperator(expDesc, x);
       } else {
-        ({ hasRightHandSide, head } = this._compileLHSRHS(s, expDesc, isLegacyFunc, staticReplacer, expObj, ctxName, context, hasRightHandSide));
-        if (!headExpression)
-          headExpression = head || expDesc;
+        ({ hasRightHandSide, head } = this._compileLHSRHS(
+          s,
+          expDesc,
+          isLegacyFunc,
+          staticReplacer,
+          expObj,
+          ctxName,
+          context,
+          hasRightHandSide
+        ));
+        if (!headExpression) headExpression = head || expDesc;
       }
     }
 
@@ -136,9 +164,12 @@ export class SlimExpression<
     expObj: string,
     ctxName: string,
     context: TContext,
-    hasRightHandSide: boolean) {
-
-    const { finalExpContent: parsedBracketExpStr, head } = this._handleBrackets(expPartAsString, expDesc);
+    hasRightHandSide: boolean
+  ) {
+    const { finalExpContent: parsedBracketExpStr, head } = this._handleBrackets(
+      expPartAsString,
+      expDesc
+    );
     // checking if expression part contains inner functino call
     const funcRegex = isLegacyFunc
       ? RegExLegacyInnerFunction
@@ -158,27 +189,27 @@ export class SlimExpression<
       }
       if (!expDesc.leftHandSide) {
         this._handleLeftHandSide(c, expDesc, expObj, context, ctxName);
-      }
-      else if (!expDesc.operator) {
+      } else if (!expDesc.operator) {
         if (!this._isComparisonOperator(c))
           throw new SlimExpressionParserException(
             'Unsupported comparison operator'
           );
         hasRightHandSide = true;
         expDesc.operator = c;
-      }
-      else if (!expDesc.rightHandSide && hasRightHandSide) {
+      } else if (!expDesc.rightHandSide && hasRightHandSide) {
         this._handleRightHandSide(c, expDesc, context, ctxName);
       }
     }
     return { hasRightHandSide, head };
   }
 
-  private _compileLogicalOperator(expDesc: ExpressionDescription<TIn, TOut, TContext>, x: string) {
+  private _compileLogicalOperator(
+    expDesc: ExpressionDescription<TIn, TOut, TContext>,
+    x: string
+  ) {
     const next = this._initialiseNextValueForExpDesc(expDesc, x);
     return next._expDesc;
   }
-
 
   private _handleBrackets(
     expContent: string,
@@ -208,7 +239,6 @@ export class SlimExpression<
       }
       this._nextRef.followedBy = last;
       return { finalExpContent: final.replace(rgxStart, '') };
-
     } else if (oc1 < oc2) {
       const regStr = oc2 - oc1 === 1 ? `\\)$` : `\\){${oc2 - oc1}}$`;
       const rgxEnd = new RegExp(regStr);
@@ -226,7 +256,9 @@ export class SlimExpression<
       if (final.startsWith('(') && final.endsWith(')')) {
         const [res] = /^\(+/.exec(final);
         const rgxFull = new RegExp(`^\\){${res.length}}$`);
-        return { finalExpContent: final.replace(/^\(+/, '').replace(rgxFull, '') };
+        return {
+          finalExpContent: final.replace(/^\(+/, '').replace(rgxFull, '')
+        };
       }
     }
 
@@ -405,6 +437,14 @@ export class SlimExpression<
       res.value = p.trim() === 'true' ? Boolean('1') : Boolean();
       return res;
     }
+    const possibleDate = this._checkDate(p);
+    if (this._isDate(possibleDate)) {
+      return {
+        value: possibleDate,
+        type: 'date',
+        parsed: true
+      };
+    }
     if (/^("|').*("|')$/.test(p)) {
       return {
         value: p.substring(1, p.length - 1),
@@ -415,9 +455,21 @@ export class SlimExpression<
 
     return { parsed: false };
   }
-
+  private _isDate(possibleDate: Date): boolean {
+    return possibleDate.toString().toLowerCase() !== 'invalid date';
+  }
+  private _checkDate(p: string): Date | undefined {
+    return new Date(p);
+  }
   private _parseFn(fnAsString: string, contextName: string) {
-    const { expressionContent, isLegacyFunc, expObj, ctxName } = SlimExpression._extractFnContent(fnAsString, contextName);
+    if (!fnAsString)
+      throw new SlimExpressionParserException('Expression function is not set');
+    const {
+      expressionContent,
+      isLegacyFunc,
+      expObj,
+      ctxName
+    } = SlimExpression._extractFnContent(fnAsString, contextName);
 
     const expStringParts = expressionContent
       .split(RegExEscapedLogicalOperators)
@@ -504,8 +556,8 @@ export class SlimExpression<
     return next;
   }
 
-  private static _escapeNewLine(str: string) {
-    return str
+  private static _escapeNewLine(str?: string) {
+    return (str || '')
       .split(/\r\n/)
       .join('')
       .split(/\r/)
@@ -528,27 +580,43 @@ export class SlimExpression<
   }
 }
 
-function _getExpressionDefinition<T, C extends object = any, S extends ExpressionResult = any>(exp: ISlimExpression<T, S, C>) {
+function _getExpressionDefinition<
+  T,
+  C extends object = any,
+  S extends ExpressionResult = any
+>(exp: ISlimExpression<T, S, C>) {
   const that = exp as SlimExpression<T, C, S>;
 
   return {
-    lhs: that.leftHandSide ? {
-      ...that.leftHandSide,
-      content: that.leftHandSide?.content ? {
-        ...that.leftHandSide.content,
-        expression: that.leftHandSide.content.expression ? _getExpressionDefinition(that.leftHandSide.content.expression) : void 0
-      } : void 0
-    } : void 0,
+    lhs: that.leftHandSide
+      ? {
+          ...that.leftHandSide,
+          content: that.leftHandSide?.content
+            ? {
+                ...that.leftHandSide.content,
+                expression: that.leftHandSide.content.expression
+                  ? _getExpressionDefinition(
+                      that.leftHandSide.content.expression
+                    )
+                  : void 0
+              }
+            : void 0
+        }
+      : void 0,
     rhs: that.rightHandSide,
-    brackets: that.brackets ? {
-      openingExp: _getExpressionDefinition(that.brackets.openingExp),
-      closingExp: _getExpressionDefinition(that.brackets.closingExp)
-    } : void 0,
+    brackets: that.brackets
+      ? {
+          openingExp: _getExpressionDefinition(that.brackets.openingExp),
+          closingExp: _getExpressionDefinition(that.brackets.closingExp)
+        }
+      : void 0,
     operator: that.operator,
-    next: that.next ? {
-      bindedBy: that.next.bindedBy,
-      following: _getExpressionDefinition(that.next.followedBy)
-    } : void 0,
+    next: that.next
+      ? {
+          bindedBy: that.next.bindedBy,
+          following: _getExpressionDefinition(that.next.followedBy)
+        }
+      : void 0,
     context: that.context,
     contextName: that.contextName,
     expObjectName: that.expObjectName

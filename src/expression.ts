@@ -378,7 +378,9 @@ export class SlimExpression<
       ctxName
     );
 
-    expDesc.rightHandSide.propertyType = typeof val;
+    expDesc.rightHandSide.propertyType = this._isDate(val)
+      ? 'date'
+      : typeof val;
     expDesc.rightHandSide.propertyName = finalPropName;
     expDesc.rightHandSide.propertyValue = val;
     expDesc.rightHandSide.implicitContextName = p.split('.')[0];
@@ -455,8 +457,11 @@ export class SlimExpression<
 
     return { parsed: false };
   }
-  private _isDate(possibleDate: Date): boolean {
-    return possibleDate.toString().toLowerCase() !== 'invalid date';
+  private _isDate(possibleDate: any): boolean {
+    return (
+      typeof possibleDate === 'object' &&
+      possibleDate.toString().toLowerCase() !== 'invalid date'
+    );
   }
   private _checkDate(p: string): Date | undefined {
     return new Date(p);

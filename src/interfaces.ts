@@ -1,4 +1,3 @@
-import { ValueTypes } from './constants';
 export type ExpressionResult = object | string | number | boolean;
 
 export type SlimExpressionFunction<
@@ -32,7 +31,7 @@ export interface ISlimExpression<
   /**
    * The context object containing the values to be parsed in the expression
    */
-  context: C;
+  context: C | null;
 
   /**
    * The expression object property name

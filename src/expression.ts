@@ -281,7 +281,9 @@ export class SlimExpression<
     const initial = pParts.shift();
 
     if (!initial)
-      throw new SlimExpressionParserException('Internal parsing error');
+      throw new SlimExpressionParserException(
+        'Internal parsing error when handling lefthandside of: ' + p
+      );
 
     if (!initial.includes(expObj))
       throw new SlimExpressionParserException(
@@ -412,7 +414,10 @@ export class SlimExpression<
     const propName = deepProps.shift();
 
     if (!propName)
-      throw new SlimExpressionParserException('Internal parsing error');
+      throw new SlimExpressionParserException(
+        'Internal parsing error when extracting property value from context: ' +
+          p
+      );
 
     let val = (context || {})[propName];
 
@@ -438,6 +443,9 @@ export class SlimExpression<
 
       res.value = p.trim() === 'true' ? Boolean('1') : Boolean();
       return res;
+    }
+    if (p.trim() === 'null') {
+      return { value: null, type: typeof true, parsed: true };
     }
     const possibleDate = this._checkDate(p);
     if (this._isValidDate(possibleDate)) {

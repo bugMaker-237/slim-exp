@@ -1,6 +1,6 @@
 {
   "name": "slim-exp",
-  "version": "0.3.12",
+  "version": "0.3.2",
   "description": "Simple ts expression parser",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -15,7 +15,7 @@
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "preversion": "npm run lint",
-    "version": "npm run format && git add -A src",
+    "version": "npm run format && git tag v%npm_package_version%",
     "postversion": "git push && git push --tags",
     "test": "jest"
   },

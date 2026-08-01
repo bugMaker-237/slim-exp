@@ -159,6 +159,7 @@ export class ExpressionAstParser {
   private _parsePostfix(): AstExpression {
     let expression = this._parsePrimary();
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       if (this._matchPunctuation('.')) {
         const property = this._expectType('identifier');

@@ -26,7 +26,6 @@ export interface ISlimExpression<
     context: TContext | null,
     throwIfContextIsNull: boolean
   ): void;
-  // fn: SlimExpressionFunction<T, S, C>;
 
   /**
    * The context object containing the values to be parsed in the expression
@@ -125,7 +124,7 @@ export interface ExpressionRightHandSide {
   /**
    * The context name used for this expression RHS
    */
-  implicitContextName: string;
+  implicitContextName: string | null;
   /**
    * The RHS property type
    */
@@ -137,7 +136,7 @@ export interface ExpressionRightHandSide {
   /**
    * The RHS property compiled value
    */
-  propertyValue: any;
+  propertyValue: unknown;
 }
 
 /**
@@ -205,8 +204,8 @@ export interface ExpressionDescription<
   leftHandSide: ExpressionLeftHandSide;
   next: NextExpression<TIn, TOut, TContext>;
 }
-export interface IParsingResult {
-  parsed: boolean;
-  value?: any;
-  type?: string;
-}
+
+/** @internal */
+export type IParsingResult =
+  | { parsed: false }
+  | { parsed: true; type: string; value: unknown };

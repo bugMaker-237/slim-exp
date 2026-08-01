@@ -15,6 +15,7 @@ export const PrimitiveValueTypes = {
   date: 'date',
   number: 'number',
   boolean: 'boolean',
+  null: 'null',
   undefined: 'undefined'
 };
 
@@ -30,7 +31,22 @@ export const LogicalOperators = {
   AND: '&&',
   OR: '||'
 };
+
+/**
+ * @deprecated No longer used internally. Will be removed in a future release.
+ */
+// eslint-disable-next-line no-useless-escape
 export const RegExEscapedComparisonOperators = /(\=\=\=?|\>\=?|\<\=?|\!\=\=?)(?<!(\=\>))(?<!(\=\<))/;
+/**
+ * @deprecated No longer used internally. Will be removed in a future release.
+ */
+// eslint-disable-next-line no-useless-escape
 export const RegExEscapedLogicalOperators = /(\&\&|\|\|)/;
+/**
+ * @deprecated No longer used internally. Will be removed in a future release.
+ */
 export const RegExInnerFunction = /((?<=\().*(?=\)))+/g;
+/**
+ * @deprecated No longer used internally. Will be removed in a future release.
+ */
 export const RegExLegacyInnerFunction = /(function\s+\((.*)\)\s+\{\s+return\s(.*))(?=\))/g;

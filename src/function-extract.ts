@@ -92,25 +92,25 @@ export function extractFunctionContent(
       throw new Error('Invalid legacy function expression');
     }
 
-    const params = extractParams(source.slice(startParams, endParams + 1));
-    const body = source.slice(startBody + 1, endBody);
+    const legacyParams = extractParams(source.slice(startParams, endParams + 1));
+    const legacyBody = source.slice(startBody + 1, endBody);
     return {
-      expressionContent: extractLegacyReturnExpression(body),
+      expressionContent: extractLegacyReturnExpression(legacyBody),
       isLegacyFunc: true,
-      expObj: params[0],
-      ctxName: providedContextName || params[1]
+      expObj: legacyParams[0],
+      ctxName: providedContextName || legacyParams[1]
     };
   }
 
   const arrowIndex = findArrowIndex(source);
   if (arrowIndex < 0) throw new Error('Invalid arrow function expression');
 
-  const params = extractParams(source.slice(0, arrowIndex));
-  const body = source.slice(arrowIndex + 2);
+  const arrowParams = extractParams(source.slice(0, arrowIndex));
+  const arrowBody = source.slice(arrowIndex + 2);
   return {
-    expressionContent: extractArrowBody(body),
+    expressionContent: extractArrowBody(arrowBody),
     isLegacyFunc: false,
-    expObj: params[0],
-    ctxName: providedContextName || params[1]
+    expObj: arrowParams[0],
+    ctxName: providedContextName || arrowParams[1]
   };
 }

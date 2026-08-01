@@ -207,8 +207,8 @@ export class ExpressionAstParser {
     return args;
   }
 
-  private _collectArgumentTokenSlices(): Array<{ start: number; end: number }> {
-    const slices: Array<{ start: number; end: number }> = [];
+  private _collectArgumentTokenSlices(): { start: number; end: number }[] {
+    const slices: { start: number; end: number }[] = [];
     let parenDepth = 1;
     let braceDepth = 0;
     let argStart: number | null = null;

@@ -25,6 +25,7 @@ import { extractFunctionContent } from './function-extract';
 
 interface LegacyBuildResult<TIn, TOut extends ExpressionResult, TContext extends object> {
   head: ExpressionDescription<TIn, TOut, TContext>;
+  link: ExpressionDescription<TIn, TOut, TContext>;
   tail: ExpressionDescription<TIn, TOut, TContext>;
 }
 
@@ -177,7 +178,7 @@ export class SlimExpression<
         openingExp: this._createChildInstance(groupResult.head),
         closingExp: this._createChildInstance(groupResult.tail)
       };
-      return { head: container, tail: container };
+      return { head: container, link: container, tail: groupResult.tail };
     }
 
     if (
@@ -187,15 +188,15 @@ export class SlimExpression<
       const logical = ast as AstBinaryExpression;
       const left = this._buildLegacyFromAst(logical.left);
       const right = this._buildLegacyFromAst(logical.right);
-      left.tail.next = {
+      left.link.next = {
         bindedBy: logical.operator,
         followedBy: this._createChildInstance(right.head)
       };
-      return { head: left.head, tail: right.tail };
+      return { head: left.head, link: right.link, tail: right.tail };
     }
 
     const description = this._buildSingleExpression(ast);
-    return { head: description, tail: description };
+    return { head: description, link: description, tail: description };
   }
 
   private _buildSingleExpression(ast: AstExpression) {
@@ -224,29 +225,29 @@ export class SlimExpression<
 
     if (unary.target.kind === 'CallExpression') {
       const call = unary.target as AstCallExpression;
-      const path = this._extractPropertyPath(call.callee);
-      if (!path || !path.length) {
+      const callPath = this._extractPropertyPath(call.callee);
+      if (!callPath || !callPath.length) {
         throw new Error('Expression has to start with type member invocation');
       }
-      this._ensureExpressionRoot(path[0]);
-      const localPath = path.slice(1);
-      result.propertyTree = localPath;
-      result.propertyName = localPath.join('.');
+      this._ensureExpressionRoot(callPath[0]);
+      const callLocalPath = callPath.slice(1);
       result.isMethod = true;
       result.content = this._buildCallContent(call);
-      result.content.methodName = path[path.length - 1];
+      result.content.methodName = callPath[callPath.length - 1];
+      result.propertyTree = callLocalPath;
+      result.propertyName = callLocalPath.join('.');
       return result;
     }
 
-    const path = this._extractPropertyPath(unary.target);
-    if (!path || !path.length) {
+    const lhsPath = this._extractPropertyPath(unary.target);
+    if (!lhsPath || !lhsPath.length) {
       throw new Error('Expression has to start with type member invocation');
     }
 
-    this._ensureExpressionRoot(path[0]);
-    const localPath = path.slice(1);
-    result.propertyTree = localPath;
-    result.propertyName = localPath.join('.');
+    this._ensureExpressionRoot(lhsPath[0]);
+    const lhsLocalPath = lhsPath.slice(1);
+    result.propertyTree = lhsLocalPath;
+    result.propertyName = lhsLocalPath.join('.');
     return result;
   }
 
@@ -344,10 +345,7 @@ export class SlimExpression<
     }
     return {
       parsed: true,
-      type:
-        literal.valueType === 'null'
-          ? typeof true
-          : typeof literal.value,
+      type: typeof literal.value,
       value: literal.value
     };
   }

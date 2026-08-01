@@ -1,6 +1,6 @@
 {
   "name": "slim-exp",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Lightweight TypeScript expression parser for building expression trees from arrow functions",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -58,7 +58,12 @@
   },
   "jest": {
     "transform": {
-      "^.+\\.(t|j)sx?$": ["ts-jest", { "tsconfig": "tsconfig.test.json" }]
+      "^.+\\.(t|j)sx?$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.test.json"
+        }
+      ]
     },
     "testRegex": "(tests|specs).*\\.(test|spec)\\.(ts|js)$",
     "moduleFileExtensions": [

@@ -5,18 +5,28 @@ import {
   ExpressionLeftHandSide,
   NextExpression,
   ExpressionResult,
-  IParsingResult,
   ISlimExpression,
   ExpressionBrackets
 } from './interfaces';
-import {
-  ComparisonOperators,
-  RegExEscapedLogicalOperators,
-  RegExEscapedComparisonOperators,
-  RegExInnerFunction,
-  RegExLegacyInnerFunction
-} from './constants';
+import { ComparisonOperators } from './constants';
 import { SlimExpressionParserException } from './expression-exception';
+import {
+  AstBinaryExpression,
+  AstCallExpression,
+  AstExpression,
+  AstFunctionExpression,
+  AstGroupExpression,
+  AstLiteral,
+  AstMemberExpression,
+  AstUnaryExpression
+} from './ast';
+import { parseExpressionAst } from './parser';
+import { extractFunctionContent } from './function-extract';
+
+interface LegacyBuildResult<TIn, TOut extends ExpressionResult, TContext extends object> {
+  head: ExpressionDescription<TIn, TOut, TContext>;
+  tail: ExpressionDescription<TIn, TOut, TContext>;
+}
 
 export class SlimExpression<
   TIn,
@@ -25,14 +35,13 @@ export class SlimExpression<
 > implements ISlimExpression<TIn, TOut, TContext> {
   private _expDesc: ExpressionDescription<TIn, TOut, TContext>;
   private _fn: SlimExpressionFunction<TIn, TOut, any>;
+  private _ast: AstExpression;
   context: TContext | null;
   private _throwIfContextIsNull: boolean;
   private _expObj: string;
   private _ctxName: string;
-  private _lastBracketExp: ExpressionDescription<any>;
-  private _nextRef: NextExpression<any, any, any>;
-  private _openedBrackets: ExpressionDescription<any>[] = [];
   private _hash: string;
+
   public get rightHandSide(): ExpressionRightHandSide {
     return this._expDesc?.rightHandSide;
   }
@@ -65,6 +74,10 @@ export class SlimExpression<
     return this._expDesc?.next;
   }
 
+  public get ast(): AstExpression {
+    return this._ast;
+  }
+
   constructor();
   constructor(fn: SlimExpressionFunction<TIn, TOut>);
   constructor(fn?: SlimExpressionFunction<TIn, TOut, TContext>) {
@@ -82,8 +95,14 @@ export class SlimExpression<
     this._throwIfContextIsNull = throwIfContextIsNull;
   }
 
-  public compile() {
+  public compile(mode: 'legacy' | 'ast' = 'legacy'): void | AstExpression {
+    if (mode === 'ast') return this.compileAst();
     this._compileInner();
+  }
+
+  public compileAst(): AstExpression {
+    this._compileInner(undefined, undefined, 'ast');
+    return this._ast;
   }
 
   public computeHash(): string {
@@ -100,9 +119,8 @@ export class SlimExpression<
   public static nameOf<TIn = any, TOut extends ExpressionResult = any>(
     fn: SlimExpressionFunction<TIn, TOut>
   ): string {
-    const res = SlimExpression._extractFnContent(
-      fn.toString()
-    ).expressionContent.split('.');
+    const res = SlimExpression._extractFnContent(fn.toString()).expressionContent
+      .split('.');
     res.shift();
     return res.join('.');
   }
@@ -119,274 +137,254 @@ export class SlimExpression<
     return SlimExpression._extractFnContent(fn.toString(), ctxName);
   }
 
-  private _compileInner(contextName?: string, fnAsString?: string) {
-    fnAsString =
-      fnAsString?.trim() || SlimExpression._escapeNewLine(this._fn?.toString());
-    const { expStringParts, isLegacyFunc, expObj, ctxName } = this._parseFn(
-      fnAsString,
-      contextName
-    );
-    this._expObj = expObj;
-    this._ctxName = ctxName;
-    const context = this.context;
-    const staticReplacer = '@%#';
-    let expDesc: ExpressionDescription<TIn, TOut, TContext> = {} as any;
-    let hasRightHandSide = false;
-    let headExpression: ISlimExpression<TIn, TOut, TContext>;
-    let head;
-    for (const s of expStringParts) {
-      const x = s.trim();
-      if (this._isLogicalOperator(x)) {
-        expDesc = this._compileLogicalOperator(expDesc, x);
-      } else {
-        ({ hasRightHandSide, head } = this._compileLHSRHS(
-          s,
-          expDesc,
-          isLegacyFunc,
-          staticReplacer,
-          expObj,
-          ctxName,
-          context,
-          hasRightHandSide
-        ));
-        if (!headExpression) headExpression = head || expDesc;
-      }
+  private _compileInner(
+    contextName?: string,
+    fnAsString?: string,
+    mode: 'legacy' | 'ast' = 'legacy'
+  ) {
+    try {
+      const fnString =
+        fnAsString?.trim() || SlimExpression._escapeNewLine(this._fn?.toString());
+      const { expressionContent, expObj, ctxName } = this._parseFn(
+        fnString,
+        contextName
+      );
+
+      this._expObj = expObj;
+      this._ctxName = ctxName;
+      this._ast = parseExpressionAst(expressionContent);
+
+      if (mode === 'ast') return;
+
+      const legacy = this._buildLegacyFromAst(this._ast);
+      this._expDesc = legacy.head;
+    } catch (err) {
+      throw new SlimExpressionParserException(
+        err instanceof Error ? err.message : String(err)
+      );
     }
-
-    this._expDesc = headExpression;
   }
 
-  private _compileLHSRHS(
-    expPartAsString: string,
-    expDesc: ExpressionDescription<TIn, TOut, TContext>,
-    isLegacyFunc: boolean,
-    staticReplacer: string,
-    expObj: string,
-    ctxName: string,
-    context: TContext,
-    hasRightHandSide: boolean
-  ) {
-    const { finalExpContent: parsedBracketExpStr, head } = this._handleBrackets(
-      expPartAsString,
-      expDesc
-    );
-    // checking if expression part contains inner functino call
-    const funcRegex = isLegacyFunc
-      ? RegExLegacyInnerFunction
-      : RegExInnerFunction;
-    const expressionMatch = funcRegex.exec(parsedBracketExpStr);
-    const innerValue = expressionMatch ? expressionMatch[0] : void 0;
-
-    const comparisonParts = parsedBracketExpStr
-      .replace(funcRegex, staticReplacer)
-      .split(RegExEscapedComparisonOperators)
-      // there are some values that are undefined. Thus filtering is necessary
-      .filter((v) => !!v);
-    for (const p of comparisonParts) {
-      let c = p.trim();
-      if (c.includes(staticReplacer)) {
-        c = c.replace(staticReplacer, innerValue);
-      }
-      if (!expDesc.leftHandSide) {
-        this._handleLeftHandSide(c, expDesc, expObj, context, ctxName);
-      } else if (!expDesc.operator) {
-        if (!this._isComparisonOperator(c))
-          throw new SlimExpressionParserException(
-            'Unsupported comparison operator'
-          );
-        hasRightHandSide = true;
-        expDesc.operator = c;
-      } else if (!expDesc.rightHandSide && hasRightHandSide) {
-        this._handleRightHandSide(c, expDesc, context, ctxName);
-      }
-    }
-    return { hasRightHandSide, head };
-  }
-
-  private _compileLogicalOperator(
-    expDesc: ExpressionDescription<TIn, TOut, TContext>,
-    x: string
-  ) {
-    const next = this._initialiseNextValueForExpDesc(expDesc, x);
-    return next._expDesc;
-  }
-
-  private _handleBrackets(
-    expContent: string,
-    expDesc: ExpressionDescription<TIn, TOut, TContext>
-  ) {
-    const final = expContent.trim();
-    const occurenceCount = (search: RegExp) =>
-      (final.match(search) || []).length;
-
-    const oc1 = occurenceCount(/\(/g);
-    const oc2 = occurenceCount(/\)/g);
-    if (oc1 > oc2) {
-      const regStr = oc1 - oc2 === 1 ? `^\\(` : `^\\({${oc1 - oc2}}`;
-      const rgxStart = new RegExp(regStr);
-      const expBrackets: ExpressionDescription<TIn, TOut, TContext> = {} as any;
-      expBrackets.brackets = {
-        openingExp: this._createChildInstance(expDesc)
+  private _buildLegacyFromAst(
+    ast: AstExpression
+  ): LegacyBuildResult<TIn, TOut, TContext> {
+    if (ast.kind === 'GroupExpression') {
+      const groupResult = this._buildLegacyFromAst(
+        (ast as AstGroupExpression).expression
+      );
+      const container = {} as ExpressionDescription<TIn, TOut, TContext>;
+      container.brackets = {
+        openingExp: this._createChildInstance(groupResult.head),
+        closingExp: this._createChildInstance(groupResult.tail)
       };
-
-      const last = this._createChildInstance(expBrackets);
-
-      this._lastBracketExp = last._expDesc;
-      this._openedBrackets.push(this._lastBracketExp);
-
-      if (!this._nextRef) {
-        return { finalExpContent: final.replace(rgxStart, ''), head: last };
-      }
-      this._nextRef.followedBy = last;
-      return { finalExpContent: final.replace(rgxStart, '') };
-    } else if (oc1 < oc2) {
-      const regStr = oc2 - oc1 === 1 ? `\\)$` : `\\){${oc2 - oc1}}$`;
-      const rgxEnd = new RegExp(regStr);
-      let i = 0;
-      do {
-        const lastOpenedBrackets = this._openedBrackets.pop();
-        lastOpenedBrackets.brackets.closingExp = this._createChildInstance(
-          expDesc
-        );
-        i++;
-      } while (i < oc2 - oc1);
-
-      return { finalExpContent: final.replace(rgxEnd, '') };
-    } else {
-      if (final.startsWith('(') && final.endsWith(')')) {
-        const [res] = /^\(+/.exec(final);
-        const rgxFull = new RegExp(`^\\){${res.length}}$`);
-        return {
-          finalExpContent: final.replace(/^\(+/, '').replace(rgxFull, '')
-        };
-      }
+      return { head: container, tail: container };
     }
 
-    return { finalExpContent: final };
+    if (
+      ast.kind === 'BinaryExpression' &&
+      this._isLogicalOperator((ast as AstBinaryExpression).operator)
+    ) {
+      const logical = ast as AstBinaryExpression;
+      const left = this._buildLegacyFromAst(logical.left);
+      const right = this._buildLegacyFromAst(logical.right);
+      left.tail.next = {
+        bindedBy: logical.operator,
+        followedBy: this._createChildInstance(right.head)
+      };
+      return { head: left.head, tail: right.tail };
+    }
+
+    const description = this._buildSingleExpression(ast);
+    return { head: description, tail: description };
   }
 
-  private _handleLeftHandSide(
-    p: string,
-    expDesc: ExpressionDescription<TIn, TOut, TContext>,
-    expObj: string,
-    context: any,
-    ctxName: string
-  ) {
-    expDesc.leftHandSide = {
+  private _buildSingleExpression(ast: AstExpression) {
+    const expDesc = {} as ExpressionDescription<TIn, TOut, TContext>;
+    if (
+      ast.kind === 'BinaryExpression' &&
+      this._isComparisonOperator((ast as AstBinaryExpression).operator)
+    ) {
+      const binary = ast as AstBinaryExpression;
+      expDesc.leftHandSide = this._buildLeftHandSide(binary.left);
+      expDesc.operator = binary.operator;
+      expDesc.rightHandSide = this._buildRightHandSide(binary.right);
+      return expDesc;
+    }
+
+    expDesc.leftHandSide = this._buildLeftHandSide(ast);
+    return expDesc;
+  }
+
+  private _buildLeftHandSide(node: AstExpression): ExpressionLeftHandSide {
+    const unary = this._unwrapUnary(node);
+    const result: ExpressionLeftHandSide = {
       propertyName: '',
-      suffixOperator: ''
+      suffixOperator: unary.suffix
     };
 
-    let pParts = p.split('.');
-    const initial = pParts.shift();
-
-    if (!initial)
-      throw new SlimExpressionParserException(
-        'Internal parsing error when handling lefthandside of: ' + p
-      );
-
-    if (!initial.includes(expObj))
-      throw new SlimExpressionParserException(
-        'Expression has to start with type member invocation'
-      );
-
-    if (initial[0].trim() !== '!' && !expObj.startsWith(initial[0]))
-      throw new SlimExpressionParserException('Unsupported unary operator');
-
-    if (!initial.startsWith(expObj)) {
-      const initialUnaryOp = initial[0].trim();
-      const initialSlice = initial.slice(0, 2).trim();
-      // trying to check if it is an operator like "!!"
-      expDesc.leftHandSide.suffixOperator =
-        initialSlice === initialUnaryOp + initialUnaryOp
-          ? initialSlice
-          : initialUnaryOp;
-    }
-
-    if (/[(](.*)[)$]/.test(p)) {
-      const res = /[(](.*)[)$]/.exec(p);
-      const content = res[1];
-      pParts = p.replace(res[0], '').split('.');
-      // removing the first type call 'n.name.surname' => removing the 'n'
-      pParts.shift();
-      const invokablePropertyName = pParts[pParts.length - 1];
-
-      expDesc.leftHandSide.isMethod = true;
-      const parseRes: IParsingResult = this._tryParse(content);
-      if (parseRes.parsed) {
-        expDesc.leftHandSide.content = {
-          type: parseRes.type,
-          primitiveValue: parseRes.value
-        };
-      } else {
-        if (this._isExpression(content)) {
-          const exp = new SlimExpression();
-          exp.context = context;
-          exp._throwIfContextIsNull = this._throwIfContextIsNull;
-          exp._compileInner(ctxName, content);
-          expDesc.leftHandSide.content = {
-            type: 'expression',
-            isExpression: true,
-            expression: exp
-          };
-        } else {
-          const { val } = this._extractPropertyValueFromContext(
-            content,
-            context,
-            ctxName
-          );
-          expDesc.leftHandSide.content = {
-            type: typeof val,
-            primitiveValue: val
-          };
-        }
+    if (unary.target.kind === 'CallExpression') {
+      const call = unary.target as AstCallExpression;
+      const path = this._extractPropertyPath(call.callee);
+      if (!path || !path.length) {
+        throw new Error('Expression has to start with type member invocation');
       }
-
-      expDesc.leftHandSide.content.methodName = invokablePropertyName;
+      this._ensureExpressionRoot(path[0]);
+      const localPath = path.slice(1);
+      result.propertyTree = localPath;
+      result.propertyName = localPath.join('.');
+      result.isMethod = true;
+      result.content = this._buildCallContent(call);
+      result.content.methodName = path[path.length - 1];
+      return result;
     }
 
-    expDesc.leftHandSide.propertyTree = pParts;
-    expDesc.leftHandSide.propertyName = pParts.join('.') || initial;
-  }
-  private _isExpression(res: string) {
-    return res.indexOf('=>') > -1 || res.startsWith('function');
+    const path = this._extractPropertyPath(unary.target);
+    if (!path || !path.length) {
+      throw new Error('Expression has to start with type member invocation');
+    }
+
+    this._ensureExpressionRoot(path[0]);
+    const localPath = path.slice(1);
+    result.propertyTree = localPath;
+    result.propertyName = localPath.join('.');
+    return result;
   }
 
-  private _handleRightHandSide(
-    p: string,
-    expDesc: ExpressionDescription<TIn, TOut, TContext>,
-    context: any,
-    ctxName?: string
-  ) {
-    expDesc.rightHandSide = {
+  private _buildCallContent(call: AstCallExpression) {
+    const firstArg = call.arguments[0];
+    if (!firstArg) {
+      return {
+        type: 'undefined',
+        primitiveValue: undefined as any
+      };
+    }
+
+    if (firstArg.kind === 'FunctionExpression') {
+      const fnArg = firstArg as AstFunctionExpression;
+      const exp = new SlimExpression();
+      exp.context = this.context;
+      exp._throwIfContextIsNull = this._throwIfContextIsNull;
+      exp._compileInner(this._ctxName, fnArg.source);
+      return {
+        type: 'expression',
+        isExpression: true,
+        expression: exp
+      };
+    }
+
+    const literal = this._toLiteralValue(firstArg);
+    if (literal.parsed) {
+      return {
+        type: literal.type,
+        primitiveValue: literal.value as any
+      };
+    }
+
+    const propertyPath = this._extractPropertyPath(firstArg);
+    if (!propertyPath) throw new Error('Unsupported method argument');
+    const path = propertyPath.join('.');
+    const { val } = this._extractPropertyValueFromContext(
+      path,
+      this.context,
+      this._ctxName
+    );
+    return {
+      type: this._isValidDate(val) ? 'date' : typeof val,
+      primitiveValue: val
+    };
+  }
+
+  private _buildRightHandSide(node: AstExpression): ExpressionRightHandSide {
+    const expDescRight: ExpressionRightHandSide = {
       propertyType: '',
       propertyName: '',
       propertyValue: null,
       implicitContextName: null
     };
 
-    const result: IParsingResult = this._tryParse(p);
-
-    if (result.parsed) {
-      expDesc.rightHandSide.propertyType = result.type;
-      expDesc.rightHandSide.propertyValue = result.value;
-      expDesc.rightHandSide.propertyName = '[CONSTANT]';
-      return;
+    const literal = this._toLiteralValue(node);
+    if (literal.parsed) {
+      expDescRight.propertyType = literal.type;
+      expDescRight.propertyName = '[CONSTANT]';
+      expDescRight.propertyValue = literal.value;
+      return expDescRight;
     }
 
+    const path = this._extractPropertyPath(node);
+    if (!path) throw new Error('Unsupported right hand side');
+    const fullPath = path.join('.');
     const { val, finalPropName } = this._extractPropertyValueFromContext(
-      p,
-      context,
-      ctxName
+      fullPath,
+      this.context,
+      this._ctxName
     );
 
-    expDesc.rightHandSide.propertyType = this._isValidDate(val)
-      ? 'date'
-      : typeof val;
-    expDesc.rightHandSide.propertyName = finalPropName;
-    expDesc.rightHandSide.propertyValue = val;
-    expDesc.rightHandSide.implicitContextName = p.split('.')[0];
+    expDescRight.propertyType = this._isValidDate(val) ? 'date' : typeof val;
+    expDescRight.propertyName = finalPropName;
+    expDescRight.propertyValue = val;
+    expDescRight.implicitContextName = path[0] || null;
+    return expDescRight;
   }
+
+  private _toLiteralValue(node: AstExpression): {
+    parsed: boolean;
+    type?: string;
+    value?: any;
+  } {
+    if (node.kind !== 'Literal') return { parsed: false };
+    const literal = node as AstLiteral;
+    if (literal.valueType === 'null') {
+      return { parsed: true, type: typeof true, value: null };
+    }
+    if (literal.valueType === 'string') {
+      const possibleDate = this._checkDate(literal.value as string);
+      if (this._isValidDate(possibleDate)) {
+        return { parsed: true, type: 'date', value: possibleDate };
+      }
+    }
+    return {
+      parsed: true,
+      type:
+        literal.valueType === 'null'
+          ? typeof true
+          : typeof literal.value,
+      value: literal.value
+    };
+  }
+
+  private _extractPropertyPath(node: AstExpression): string[] | null {
+    if (node.kind === 'Identifier') return [(node as any).name];
+    if (node.kind !== 'MemberExpression') return null;
+
+    const member = node as AstMemberExpression;
+    const objectPath = this._extractPropertyPath(member.object);
+    if (!objectPath) return null;
+    return [...objectPath, member.property];
+  }
+
+  private _unwrapUnary(node: AstExpression): {
+    suffix: string;
+    target: AstExpression;
+  } {
+    let count = 0;
+    let current = node;
+    while (current.kind === 'UnaryExpression') {
+      const unary = current as AstUnaryExpression;
+      if (unary.operator !== '!') {
+        throw new Error('Unsupported unary operator');
+      }
+      count++;
+      current = unary.argument;
+    }
+    return { suffix: '!'.repeat(count), target: current };
+  }
+
+  private _ensureExpressionRoot(initial: string) {
+    if (!initial.includes(this._expObj)) {
+      throw new Error('Expression has to start with type member invocation');
+    }
+  }
+
   private _extractPropertyValueFromContext(
     p: string,
     context: any,
@@ -394,19 +392,15 @@ export class SlimExpression<
   ): { val: any; finalPropName: any } {
     const deepProps = p.split('.');
     if (context == null && this._throwIfContextIsNull)
-      throw new SlimExpressionParserException(
-        'ContextData must be managed but context is null or undefined'
-      );
+      throw new Error('ContextData must be managed but context is null or undefined');
     if (deepProps.length > 2)
       console.warn(
         'It is more expensive to use complex object for context due to deep search of property value in object tree. Consider using simple objects. e.g: {id: myId}'
       );
 
-    // removing the context accessor ($) from expression
     const ctx = deepProps.shift();
-
     if (ctxName !== ctx && this._throwIfContextIsNull)
-      throw new SlimExpressionParserException(
+      throw new Error(
         "Due to javascript limitations, it's not possible to process information out of context, please attach value to context"
       );
 
@@ -414,9 +408,8 @@ export class SlimExpression<
     const propName = deepProps.shift();
 
     if (!propName)
-      throw new SlimExpressionParserException(
-        'Internal parsing error when extracting property value from context: ' +
-          p
+      throw new Error(
+        'Internal parsing error when extracting property value from context: ' + p
       );
 
     let val = (context || {})[propName];
@@ -428,139 +421,35 @@ export class SlimExpression<
     }
 
     if (val == null && this._throwIfContextIsNull)
-      throw new SlimExpressionParserException(
-        `Could not find property ${p} in provided context`
-      );
+      throw new Error(`Could not find property ${p} in provided context`);
 
     return { val, finalPropName };
   }
-  private _tryParse(p: string): IParsingResult {
-    if (!isNaN(Number.parseFloat(p))) {
-      return { value: Number.parseFloat(p), type: typeof 1, parsed: true };
-    }
-    if (p.trim() === 'true' || p.trim() === 'false') {
-      const res = { value: false, type: typeof true, parsed: true };
 
-      res.value = p.trim() === 'true' ? Boolean('1') : Boolean();
-      return res;
-    }
-    if (p.trim() === 'null') {
-      return { value: null, type: typeof true, parsed: true };
-    }
-    const possibleDate = this._checkDate(p);
-    if (this._isValidDate(possibleDate)) {
-      return {
-        value: possibleDate,
-        type: 'date',
-        parsed: true
-      };
-    }
-    if (/^("|').*("|')$/.test(p)) {
-      return {
-        value: p.substring(1, p.length - 1),
-        type: typeof '',
-        parsed: true
-      };
-    }
-
-    return { parsed: false };
-  }
   private _isValidDate(possibleDate: any): boolean {
     return (
       typeof possibleDate === 'object' &&
       possibleDate.toString().toLowerCase() !== 'invalid date'
     );
   }
+
   private _checkDate(p: string): Date | undefined {
     return new Date(p);
   }
-  private _parseFn(fnAsString: string, contextName: string) {
-    if (!fnAsString)
-      throw new SlimExpressionParserException('Expression function is not set');
-    const {
-      expressionContent,
-      isLegacyFunc,
-      expObj,
-      ctxName
-    } = SlimExpression._extractFnContent(fnAsString, contextName);
 
-    const expStringParts = expressionContent
-      .split(RegExEscapedLogicalOperators)
-      .filter((v) => !!v);
-    return { expStringParts, isLegacyFunc, expObj, ctxName };
+  private _parseFn(fnAsString: string, contextName: string) {
+    if (!fnAsString) throw new Error('Expression function is not set');
+    return SlimExpression._extractFnContent(fnAsString, contextName);
   }
 
   private static _extractFnContent(fnAsString: string, ctxName?: string) {
-    let fnStr = fnAsString;
-    let isLegacyFunc = false;
-    if (fnStr.startsWith('function')) {
-      fnStr = fnStr
-        .replace('return', '')
-        // removes the beginig 'function' keyword
-        .slice(fnStr.indexOf('('));
-
-      // leaving out '{' because i need it as marker to get the content
-      fnStr = fnStr
-        .slice(0, fnStr.lastIndexOf('}'))
-        .slice(0, fnStr.lastIndexOf(';'));
-
-      // this => "function(x){return x.prop}" is a legacy function
-      isLegacyFunc = true;
-    }
-
-    const expObj = SlimExpression._extractExpObj(fnStr, isLegacyFunc);
-
-    if (fnStr.split(')')[0].indexOf(',') > -1)
-      ctxName =
-        ctxName ||
-        fnStr.substring(fnStr.indexOf(',') + 1, fnStr.indexOf(')')).trim();
-
-    const expressionContent = fnStr
-      .substring(fnStr.indexOf(isLegacyFunc ? '{' : '>') + 1)
-      .trim();
-    return { expressionContent, isLegacyFunc, expObj, ctxName };
-  }
-
-  private static _extractExpObj(fnStr: string, isLegacyFunc = false) {
-    return (
-      fnStr.substring(0, fnStr.indexOf(',')) ||
-      fnStr.substring(0, fnStr.indexOf(isLegacyFunc ? '{' : '='))
-    )
-      .replace('(', '')
-      .replace(')', '')
-      .trim();
-  }
-
-  private _initialiseNextValueForExpDesc(
-    expDesc: ExpressionDescription<TIn, TOut, TContext>,
-    bindedBy = ''
-  ) {
-    // normally if breackets have been open the initial expDesc
-    // of this instance is the expDesc of the opening brackets
-    const realExpDesc =
-      (this._lastBracketExp?.brackets?.closingExp as SlimExpression<any>)
-        ?._expDesc === expDesc
-        ? this._lastBracketExp
-        : expDesc;
-
-    const next = this._createChildInstance();
-    // actually expDesc is the last element of the array
-    // it's equivalent to expressionParts[expressionParts.length - 1]
-    realExpDesc.next = {
-      bindedBy,
-      followedBy: next
-    };
-
-    this._nextRef = realExpDesc.next;
-    return next;
+    return extractFunctionContent(fnAsString, ctxName);
   }
 
   private _createChildInstance(
     expDesc?: ExpressionDescription<TIn, TOut, TContext>
   ): SlimExpression<any> {
     const next = new SlimExpression<TIn, TContext, TOut>();
-    // next benefits of almost all props of 'this' since
-    // there are parsed in the same section () => <section1> && <section2(next)>
     next._expDesc = expDesc || ({} as any);
     next._throwIfContextIsNull = this._throwIfContextIsNull;
     next.context = this.context;
@@ -580,6 +469,7 @@ export class SlimExpression<
       .replace(/\s+/g, ' ')
       .trim();
   }
+
   private _isComparisonOperator(op: string) {
     return ComparisonOperators.ALL.includes(op.trim());
   }

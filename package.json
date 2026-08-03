@@ -1,6 +1,6 @@
 {
   "name": "slim-exp",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Lightweight TypeScript expression parser for building expression trees from arrow functions",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

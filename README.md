@@ -573,6 +573,117 @@ exp.compile();
 // exp.leftHandSide.content.expression.rightHandSide.propertyValue === 45
 ```
 
+The nested function is compiled fully recursively, so logical chains inside it
+are supported too:
+
+```ts
+const exp = new SlimExpression<User>();
+exp.fromAction(
+  (n, $) => n.values.filter((s) => s.value !== $.v && s.value > 50),
+  { v: 10 }
+);
+
+const ast = exp.compileAst(); // same as exp.compile('ast')
+exp.compile();
+```
+
+AST — `compileAst()` / `compile('ast')`:
+
+```json
+{
+  "kind": "CallExpression",
+  "callee": {
+    "kind": "MemberExpression",
+    "object": {
+      "kind": "MemberExpression",
+      "object": { "kind": "Identifier", "name": "n", "start": 0, "end": 1 },
+      "property": "values",
+      "start": 0,
+      "end": 8
+    },
+    "property": "filter",
+    "start": 0,
+    "end": 15
+  },
+  "arguments": [
+    {
+      "kind": "FunctionExpression",
+      "source": "(s) => s.value !== $.v && s.value > 50",
+      "start": 16,
+      "end": 54
+    }
+  ],
+  "start": 0,
+  "end": 55
+}
+```
+
+Legacy — `compile()`:
+
+```json
+{
+  "lhs": {
+    "propertyName": "values.filter",
+    "suffixOperator": "",
+    "isMethod": true,
+    "content": {
+      "type": "expression",
+      "isExpression": true,
+      "expression": {
+        "lhs": {
+          "propertyName": "value",
+          "suffixOperator": "",
+          "propertyTree": ["value"]
+        },
+        "rhs": {
+          "propertyType": "number",
+          "propertyName": "v",
+          "propertyValue": 10,
+          "implicitContextName": "$"
+        },
+        "operator": "!==",
+        "next": {
+          "bindedBy": "&&",
+          "following": {
+            "lhs": {
+              "propertyName": "value",
+              "suffixOperator": "",
+              "propertyTree": ["value"]
+            },
+            "rhs": {
+              "propertyType": "number",
+              "propertyName": "[CONSTANT]",
+              "propertyValue": 50,
+              "implicitContextName": null
+            },
+            "operator": ">",
+            "context": { "v": 10 },
+            "contextName": "$",
+            "expObjectName": "s"
+          }
+        },
+        "context": { "v": 10 },
+        "contextName": "$",
+        "expObjectName": "s"
+      },
+      "methodName": "filter"
+    },
+    "propertyTree": ["values", "filter"]
+  },
+  "context": { "v": 10 },
+  "contextName": "$",
+  "expObjectName": "n"
+}
+```
+
+```ts
+// exp.leftHandSide.content.methodName === 'filter'
+// exp.leftHandSide.content.expression.operator === '!=='
+// exp.leftHandSide.content.expression.next.bindedBy === '&&'
+// exp.leftHandSide.content.expression.next.followedBy.operator === '>'
+// exp.leftHandSide.content.expression.next.followedBy.rightHandSide.propertyValue === 50
+```
+
 #### Unary negation
 
 ```ts
@@ -759,9 +870,6 @@ Context-related codes deserve special attention:
 
 ## Not Supported
 
-- Logical operators inside nested method-argument functions. The sub-expression
-  `(s) => s.value !== $.v && s.value > 50` cannot yet be handled when it appears
-  as the argument to `.filter()` or similar.
 - Function references — slim-exp works by parsing function source text, so only
   inline function literals are supported.
 

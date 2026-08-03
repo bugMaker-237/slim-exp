@@ -97,7 +97,11 @@ describe('Method expression passes', () => {
     };
     const exp = new SlimExpression<any, any>();
     // Act
-    exp.fromAction((a, _) => a.email.endsWith(_.name) || (a.name.includes(_.name) && a.id > 45), $);
+    exp.fromAction(
+      (a, _) =>
+        a.email.endsWith(_.name) || (a.name.includes(_.name) && a.id > 45),
+      $
+    );
     exp.compile();
 
     // Assert

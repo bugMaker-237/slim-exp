@@ -42,6 +42,8 @@ export interface AstUnaryExpression extends AstBaseNode {
 export interface AstFunctionExpression extends AstBaseNode {
   kind: 'FunctionExpression';
   source: string;
+  /** The AST for the function body, parsed independently of its parameters. */
+  compiled: AstExpression;
 }
 
 export interface AstCallExpression extends AstBaseNode {

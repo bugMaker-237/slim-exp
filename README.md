@@ -48,7 +48,7 @@ The node kinds are:
 | `MemberExpression` | `object`, `property` | Property access, e.g. `n.name` or `$.code.is` |
 | `UnaryExpression` | `operator`, `argument` | `!` negation |
 | `CallExpression` | `callee`, `arguments` | Method calls, e.g. `n.name.includes('hello')` |
-| `FunctionExpression` | `source` | A nested arrow/anonymous function literal passed as a method argument |
+| `FunctionExpression` | `source`, `compiled` | A nested arrow/anonymous function literal, with its raw source and parsed body AST |
 | `BinaryExpression` | `operator`, `left`, `right` | Logical (`&&`, `\|\|`) and comparison (`==`, `===`, `!=`, `!==`, `>`, `>=`, `<`, `<=`) operators |
 | `GroupExpression` | `expression` | A parenthesised sub-expression |
 
@@ -482,7 +482,7 @@ exp.compile();
 
 #### Nested function expressions
 
-When a method argument is itself an arrow function, it is kept as a `FunctionExpression` node carrying the raw source text. Call `compileAst()` on a new instance to get its own AST, or let the legacy builder compile it recursively:
+When a method argument is itself an arrow function, it is kept as a `FunctionExpression` node. `source` retains the complete callback, while `compiled` contains the AST for its body (without its parameters or `=>`). Nested callbacks are compiled recursively. The legacy builder continues to compile the callback from `source` recursively:
 
 ```ts
 const exp = new SlimExpression<User>((n) =>
@@ -515,6 +515,25 @@ AST — `compileAst()` / `compile('ast')`:
     {
       "kind": "FunctionExpression",
       "source": "v => v.complexity.made.simple",
+      "compiled": {
+        "kind": "MemberExpression",
+        "object": {
+          "kind": "MemberExpression",
+          "object": {
+            "kind": "MemberExpression",
+            "object": { "kind": "Identifier", "name": "v", "start": 0, "end": 1 },
+            "property": "complexity",
+            "start": 0,
+            "end": 12
+          },
+          "property": "made",
+          "start": 0,
+          "end": 17
+        },
+        "property": "simple",
+        "start": 0,
+        "end": 24
+      },
       "start": 20,
       "end": 49
     }
@@ -609,6 +628,52 @@ AST — `compileAst()` / `compile('ast')`:
     {
       "kind": "FunctionExpression",
       "source": "(s) => s.value !== $.v && s.value > 50",
+      "compiled": {
+        "kind": "BinaryExpression",
+        "operator": "&&",
+        "left": {
+          "kind": "BinaryExpression",
+          "operator": "!==",
+          "left": {
+            "kind": "MemberExpression",
+            "object": { "kind": "Identifier", "name": "s", "start": 0, "end": 1 },
+            "property": "value",
+            "start": 0,
+            "end": 7
+          },
+          "right": {
+            "kind": "MemberExpression",
+            "object": { "kind": "Identifier", "name": "$", "start": 12, "end": 13 },
+            "property": "v",
+            "start": 12,
+            "end": 15
+          },
+          "start": 0,
+          "end": 15
+        },
+        "right": {
+          "kind": "BinaryExpression",
+          "operator": ">",
+          "left": {
+            "kind": "MemberExpression",
+            "object": { "kind": "Identifier", "name": "s", "start": 19, "end": 20 },
+            "property": "value",
+            "start": 19,
+            "end": 26
+          },
+          "right": {
+            "kind": "Literal",
+            "value": 50,
+            "valueType": "number",
+            "start": 29,
+            "end": 31
+          },
+          "start": 19,
+          "end": 31
+        },
+        "start": 0,
+        "end": 31
+      },
       "start": 16,
       "end": 54
     }

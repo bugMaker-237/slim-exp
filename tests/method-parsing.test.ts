@@ -56,6 +56,74 @@ describe('Method expression passes', () => {
     expect(exp.leftHandSide.content.isExpression).toBeTruthy();
   });
 
+  it('should compile an arrow-function method argument into its body AST', () => {
+    const exp = new SlimExpression<PseudoModel>((n) => n.values.map((v) => v));
+
+    const ast = exp.compileAst();
+
+    expect(ast.kind).toBe('CallExpression');
+    if (ast.kind !== 'CallExpression') return;
+    expect(ast.arguments[0]).toMatchObject({
+      kind: 'FunctionExpression',
+      source: '(v) => v',
+      compiled: { kind: 'Identifier', name: 'v' }
+    });
+  });
+
+  it('should parse nested callbacks in a complex filter expression', () => {
+    const exp = new SlimExpression<any>();
+
+    exp.fromAction(
+      (n, $) =>
+        (n.name.includes('hello') && n.isFool) ||
+        (n.matricule !== 'mat22' &&
+          n.name.startsWith($.name) &&
+          n.complexValues.filter((c) =>
+            c.complexity.made.simple.map(
+              (s) => s.and.straightTo.the.point !== $.value
+            )
+          )),
+      {
+        name: '10x Dev',
+        value: 82,
+        obj: { the: {} }
+      }
+    );
+    exp.compile();
+
+    console.log(JSON.stringify(exp.ast, null, 2));
+    expect(exp.ast).toMatchObject({
+      kind: 'BinaryExpression',
+      operator: '||',
+      right: {
+        kind: 'GroupExpression',
+        expression: {
+          kind: 'BinaryExpression',
+          operator: '&&',
+          right: {
+            kind: 'CallExpression',
+            callee: { kind: 'MemberExpression', property: 'filter' },
+            arguments: [
+              {
+                kind: 'FunctionExpression',
+                compiled: {
+                  kind: 'CallExpression',
+                  callee: { kind: 'MemberExpression', property: 'map' },
+                  arguments: [
+                    {
+                      kind: 'FunctionExpression',
+                      compiled: { kind: 'BinaryExpression', operator: '!==' }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    });
+  });
+
   it('should have lefthandside with method content and expression value (more complex)', () => {
     // Arrange
     const exp = new SlimExpression<PseudoModel>((n) =>

@@ -9,6 +9,7 @@ import {
   AstMemberExpression,
   AstUnaryExpression
 } from './ast';
+import { extractFunctionContent } from './function-extract';
 import { Token, tokenizeExpression } from './tokenizer';
 
 function createIdentifier(token: Token): AstIdentifier {
@@ -250,9 +251,13 @@ export class ExpressionAstParser {
 
   private _parseArgumentSource(raw: string, start: number): AstExpression {
     if (raw.indexOf('=>') > -1 || raw.startsWith('function')) {
+      // ExpressionAstParser parses expressions, not function declarations. Parse
+      // only the callback body while preserving the complete callback source.
+      const { expressionContent } = extractFunctionContent(raw);
       return {
         kind: 'FunctionExpression',
         source: raw,
+        compiled: new ExpressionAstParser(expressionContent).parse(),
         start,
         end: start + raw.length
       } as AstFunctionExpression;

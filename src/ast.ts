@@ -1,13 +1,6 @@
 export type AstLogicalOperator = '&&' | '||';
 export type AstComparisonOperator =
-  | '=='
-  | '==='
-  | '!='
-  | '!=='
-  | '>'
-  | '>='
-  | '<'
-  | '<=';
+  '==' | '===' | '!=' | '!==' | '>' | '>=' | '<' | '<=';
 export type AstUnaryOperator = '!';
 
 export interface AstBaseNode {

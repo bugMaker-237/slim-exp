@@ -4,13 +4,13 @@ export type SlimExpressionFunction<
   T,
   S extends ExpressionResult = any,
   C extends object = any
-  > = (obj: T, $?: C) => S;
+> = (obj: T, $?: C) => S;
 
 export interface ISlimExpression<
   T,
   S extends ExpressionResult = any,
   C extends object = any
-  > {
+> {
   /**
    * Compiles the expression into an object tree
    */
@@ -48,7 +48,7 @@ export interface ISlimExpression<
   rightHandSide: ExpressionRightHandSide;
 
   /**
-   * Compiled left handside of the expression 
+   * Compiled left handside of the expression
    */
   leftHandSide: ExpressionLeftHandSide;
 
@@ -63,19 +63,19 @@ export interface ISlimExpression<
   operator: string;
 
   /**
-   * The Expression following this one, which is bounded by logical operator 
+   * The Expression following this one, which is bounded by logical operator
    */
   next: NextExpression<T, S, C>;
 
   /**
    * Computes a hash string identifying this expression
    */
-  computeHash(): string
+  computeHash(): string;
 
   /**
    * The last saved hash after calling compute hash
    */
-  lastComputedHash: string
+  lastComputedHash: string;
   /**
    * A stringified version of the object
    */
@@ -91,7 +91,7 @@ interface Invokable {
    */
   isMethod?: boolean;
   /**
-   * The content description of the invokable 
+   * The content description of the invokable
    */
   content?: {
     /**
@@ -104,7 +104,7 @@ interface Invokable {
      */
     methodName?: string;
     /**
-     * The compiled primitive value, if any, of the invokable method content 
+     * The compiled primitive value, if any, of the invokable method content
      */
     primitiveValue?: string | number;
     /**
@@ -165,7 +165,7 @@ export interface NextExpression<
   TIn,
   TOut extends ExpressionResult = any,
   TContext extends object = any
-  > {
+> {
   /**
    * The logical operator binding both expressions
    */
@@ -181,7 +181,7 @@ export interface NextExpression<
  */
 export interface ExpressionBrackets {
   /**
-   * The expression at the opening bracket position 
+   * The expression at the opening bracket position
    * i.e the first expression in the bracket group
    */
   openingExp?: ISlimExpression<any>;
@@ -192,12 +192,11 @@ export interface ExpressionBrackets {
   closingExp?: ISlimExpression<any>;
 }
 
-
 export interface ExpressionDescription<
   TIn,
   TOut extends ExpressionResult = any,
   TContext extends object = any
-  > {
+> {
   brackets: ExpressionBrackets;
   operator: string;
   rightHandSide: ExpressionRightHandSide;
@@ -207,5 +206,4 @@ export interface ExpressionDescription<
 
 /** @internal */
 export type IParsingResult =
-  | { parsed: false }
-  | { parsed: true; type: string; value: unknown };
+  { parsed: false } | { parsed: true; type: string; value: unknown };

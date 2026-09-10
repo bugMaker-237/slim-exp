@@ -29,11 +29,7 @@ function extractParams(paramsRaw: string): string[] {
 function extractLegacyReturnExpression(body: string): string {
   const trimmed = body.trim();
   if (!trimmed.startsWith('return')) return trimmed.replace(/;$/, '').trim();
-  return trimmed
-    .slice('return'.length)
-    .trim()
-    .replace(/;$/, '')
-    .trim();
+  return trimmed.slice('return'.length).trim().replace(/;$/, '').trim();
 }
 
 function extractArrowBody(bodyRaw: string): string {
@@ -92,7 +88,9 @@ export function extractFunctionContent(
       throw new Error('Invalid legacy function expression');
     }
 
-    const legacyParams = extractParams(source.slice(startParams, endParams + 1));
+    const legacyParams = extractParams(
+      source.slice(startParams, endParams + 1)
+    );
     const legacyBody = source.slice(startBody + 1, endBody);
     return {
       expressionContent: extractLegacyReturnExpression(legacyBody),

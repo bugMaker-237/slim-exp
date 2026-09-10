@@ -8,7 +8,7 @@ import {
   AstGroupExpression,
   AstLiteral,
   AstMemberExpression,
-  AstUnaryExpression,
+  AstUnaryExpression
 } from './ast';
 import {
   ExpressionDescription,
@@ -16,7 +16,7 @@ import {
   ExpressionRightHandSide,
   ExpressionResult,
   IParsingResult,
-  ISlimExpression,
+  ISlimExpression
 } from './interfaces';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -91,9 +91,10 @@ export function extractPropertyPath(node: AstExpression): string[] | null {
  * Strips leading `!` unary operators from a node, returning the inner target
  * and the accumulated operator string (e.g. `"!!"` for double negation).
  */
-export function unwrapUnary(
-  node: AstExpression
-): { suffix: string; target: AstExpression } {
+export function unwrapUnary(node: AstExpression): {
+  suffix: string;
+  target: AstExpression;
+} {
   let count = 0;
   let current = node;
   while (current.kind === 'UnaryExpression') {
@@ -167,7 +168,8 @@ function extractPropertyValueFromContext(
 
   if (!propName) {
     throw new SlimExpressionParserException(
-      'Internal parsing error when extracting property value from context: ' + p,
+      'Internal parsing error when extracting property value from context: ' +
+        p,
       'PARSE_ERROR'
     );
   }
@@ -215,7 +217,7 @@ function buildCallContent<
   if (literal.parsed) {
     return {
       type: literal.type,
-      primitiveValue: literal.value as string | number,
+      primitiveValue: literal.value as string | number
     };
   }
 
@@ -236,7 +238,7 @@ function buildCallContent<
   );
   return {
     type: isValidDate(val) ? 'date' : typeof val,
-    primitiveValue: val as string | number,
+    primitiveValue: val as string | number
   };
 }
 
@@ -251,7 +253,7 @@ function buildLeftHandSide<
   const unary = unwrapUnary(node);
   const result: ExpressionLeftHandSide = {
     propertyName: '',
-    suffixOperator: unary.suffix,
+    suffixOperator: unary.suffix
   };
 
   if (unary.target.kind === 'CallExpression') {
@@ -310,7 +312,7 @@ function buildRightHandSide<
     propertyType: '',
     propertyName: '',
     propertyValue: null,
-    implicitContextName: null,
+    implicitContextName: null
   };
 
   const literal = toLiteralValue(node);
@@ -387,7 +389,7 @@ export function buildLegacyFromAst<
     const container = {} as ExpressionDescription<TIn, TOut, TContext>;
     container.brackets = {
       openingExp: config.createChild(groupResult.head),
-      closingExp: config.createChild(groupResult.tail),
+      closingExp: config.createChild(groupResult.tail)
     };
     return { head: container, link: container, tail: groupResult.tail };
   }
@@ -401,7 +403,7 @@ export function buildLegacyFromAst<
     const right = buildLegacyFromAst(logical.right, config);
     left.link.next = {
       bindedBy: logical.operator,
-      followedBy: config.createChild(right.head),
+      followedBy: config.createChild(right.head)
     };
     return { head: left.head, link: right.link, tail: right.tail };
   }

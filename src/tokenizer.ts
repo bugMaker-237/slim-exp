@@ -15,7 +15,20 @@ export interface Token {
   end: number;
 }
 
-const Operators = ['===', '!==', '==', '!=', '>=', '<=', '&&', '||', '=>', '>', '<', '!'];
+const Operators = [
+  '===',
+  '!==',
+  '==',
+  '!=',
+  '>=',
+  '<=',
+  '&&',
+  '||',
+  '=>',
+  '>',
+  '<',
+  '!'
+];
 const Punctuations = ['.', '(', ')', ',', '{', '}', ';'];
 
 export function tokenizeExpression(source: string): Token[] {

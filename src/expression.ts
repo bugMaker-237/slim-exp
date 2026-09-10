@@ -9,9 +9,7 @@ import {
   ExpressionBrackets
 } from './interfaces';
 import { SlimExpressionParserException } from './expression-exception';
-import {
-  AstExpression,
-} from './ast';
+import { AstExpression } from './ast';
 import { parseExpressionAst } from './parser';
 import { extractFunctionContent } from './function-extract';
 import { buildLegacyFromAst, LegacyBuildResult } from './legacy-builder';
@@ -21,7 +19,8 @@ export class SlimExpression<
   TContext extends object = any,
   TOut extends ExpressionResult = any
 > implements ISlimExpression<TIn, TOut, TContext> {
-  private _expDesc: ExpressionDescription<TIn, TOut, TContext> = {} as ExpressionDescription<TIn, TOut, TContext>;
+  private _expDesc: ExpressionDescription<TIn, TOut, TContext> =
+    {} as ExpressionDescription<TIn, TOut, TContext>;
   private _fn: SlimExpressionFunction<TIn, TOut, any> | undefined;
   private _ast: AstExpression | undefined;
   context: TContext | null = null;
@@ -108,8 +107,9 @@ export class SlimExpression<
   public static nameOf<TIn = any, TOut extends ExpressionResult = any>(
     fn: SlimExpressionFunction<TIn, TOut>
   ): string {
-    const res = SlimExpression._extractFnContent(fn.toString()).expressionContent
-      .split('.');
+    const res = SlimExpression._extractFnContent(
+      fn.toString()
+    ).expressionContent.split('.');
     res.shift();
     return res.join('.');
   }
@@ -133,7 +133,8 @@ export class SlimExpression<
   ) {
     try {
       const fnString =
-        fnAsString?.trim() || SlimExpression._escapeNewLine(this._fn?.toString());
+        fnAsString?.trim() ||
+        SlimExpression._escapeNewLine(this._fn?.toString());
       const { expressionContent, expObj, ctxName } = this._parseFn(
         fnString,
         contextName
@@ -170,15 +171,16 @@ export class SlimExpression<
         exp._throwIfContextIsNull = this._throwIfContextIsNull;
         exp._compileInner(ctxName, source);
         return exp;
-      },
+      }
     });
   }
 
   private _parseFn(fnAsString: string, contextName?: string) {
-    if (!fnAsString) throw new SlimExpressionParserException(
-      'Expression function is not set',
-      'FUNCTION_NOT_SET'
-    );
+    if (!fnAsString)
+      throw new SlimExpressionParserException(
+        'Expression function is not set',
+        'FUNCTION_NOT_SET'
+      );
     return SlimExpression._extractFnContent(fnAsString, contextName);
   }
 
@@ -190,7 +192,8 @@ export class SlimExpression<
     expDesc?: ExpressionDescription<TIn, TOut, TContext>
   ): SlimExpression<TIn, TContext, TOut> {
     const next = new SlimExpression<TIn, TContext, TOut>();
-    next._expDesc = expDesc ?? ({} as ExpressionDescription<TIn, TOut, TContext>);
+    next._expDesc =
+      expDesc ?? ({} as ExpressionDescription<TIn, TOut, TContext>);
     next._throwIfContextIsNull = this._throwIfContextIsNull;
     next.context = this.context;
     next._ctxName = this.contextName;
@@ -218,7 +221,12 @@ export class SlimExpression<
 interface ExpressionDefinitionShape {
   lhs: unknown;
   rhs: ExpressionRightHandSide | undefined;
-  brackets: { openingExp: ExpressionDefinitionShape | undefined; closingExp: ExpressionDefinitionShape | undefined } | undefined;
+  brackets:
+    | {
+        openingExp: ExpressionDefinitionShape | undefined;
+        closingExp: ExpressionDefinitionShape | undefined;
+      }
+    | undefined;
   operator: string | undefined;
   next: { bindedBy: string; following: ExpressionDefinitionShape } | undefined;
   context: object | null;
@@ -257,7 +265,7 @@ function _getExpressionDefinition<
             : undefined,
           closingExp: that.brackets.closingExp
             ? _getExpressionDefinition(that.brackets.closingExp)
-            : undefined,
+            : undefined
         }
       : void 0,
     operator: that.operator,
